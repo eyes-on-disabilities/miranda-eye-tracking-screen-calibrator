@@ -5,5 +5,5 @@ from typing import Tuple
 class Publisher(ABC):
 
     @abstractmethod
-    def push(self, point: Tuple[float, float]):
+    def push(self, vector: Tuple[float, float]):
         pass

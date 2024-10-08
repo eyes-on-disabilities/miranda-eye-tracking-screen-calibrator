@@ -13,7 +13,7 @@ class DataProvider(ABC):
         pass
 
     @abstractmethod
-    def get_position(self) -> Tuple[float, float]:
+    def get_vector(self) -> Tuple[float, float]:
         pass
 
     @abstractmethod

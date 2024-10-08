@@ -2,10 +2,10 @@ from typing import Any, Tuple
 
 
 class CalibrationInstruction:
-    def __init__(self, text: str = None, image: str = None, point: Tuple[float, float] = None):
+    def __init__(self, text: str = None, image: str = None, vector: Tuple[float, float] = None):
         self.text = text
         self.image = image
-        self.point = point
+        self.vector = vector
 
 
 class CalibrationResult:
