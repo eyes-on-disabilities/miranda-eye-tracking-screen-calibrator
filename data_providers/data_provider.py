@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Tuple
+from typing import Tuple
 
 
 class DataProvider(ABC):
@@ -14,16 +14,4 @@ class DataProvider(ABC):
 
     @abstractmethod
     def get_vector(self) -> Tuple[float, float]:
-        pass
-
-    @abstractmethod
-    def get_raw(self) -> Any:
-        pass
-
-    @abstractmethod
-    def is_running(self) -> bool:
-        pass
-
-    @abstractmethod
-    def has_data(self) -> bool:
         pass

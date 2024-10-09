@@ -1,6 +1,10 @@
 from transformers.transformer import Transformer
+from transformers.two_d_perspective_transformer import \
+    TwoDPerspectiveTransformer
 
-transformers = {}
+transformers = {
+    "2dperspective": TwoDPerspectiveTransformer,
+}
 
 
 def has(key: str) -> bool:
