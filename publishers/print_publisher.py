@@ -4,7 +4,7 @@ from publishers.publisher import Publisher
 
 
 class PrintPublisher(Publisher):
-    """Simply prints a given vector, like \"vector: 13.37, 6.9\""""
+    """Prints a given vector, like \"vector: 13.37, 6.9\""""
 
     def push(self, vector: Tuple[float, float]):
         print(f"vector: {vector[0]}, {vector[1]}")

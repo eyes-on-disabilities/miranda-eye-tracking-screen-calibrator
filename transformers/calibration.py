@@ -2,10 +2,12 @@ from typing import Any, Tuple
 
 
 class CalibrationInstruction:
-    def __init__(self, text: str = None, image: str = None, vector: Tuple[float, float] = None):
+    """An instruction on what to display when calibrating a certain vector"""
+
+    def __init__(self, vector: Tuple[float, float] = None, text: str = None, image: str = None):
+        self.vector = vector
         self.text = text
         self.image = image
-        self.vector = vector
 
 
 class CalibrationResult:

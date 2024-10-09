@@ -1,9 +1,9 @@
 import argparse
 
 from data_providers import data_providers
-from transformers import transformers
-from publishers import publishers
 from guis import guis
+from publishers import publishers
+from transformers import transformers
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -16,24 +16,29 @@ parser.add_argument(
     "--transformer",
     type=str,
     help=(
-        'The transformation technique to transform vectors of the provider to the screen resolution. '
+        "The transformation technique to transform vectors of the provider to the screen resolution. "
         'default="%(default)s"'
     ),
     choices=transformers,
-    default=next(iter(transformers)),  # the first mentioned key
+    default=next(iter(transformers)),
 )
 parser.add_argument(
     "--publisher",
     help='The method for publishing the resulting vectors. default="%(default)s"',
     choices=publishers,
-    default=next(iter(publishers)),  # the first mentioned key
+    default=next(iter(publishers)),
 )
 parser.add_argument(
     "--gui",
     help='The GUI. default="%(default)s"',
     choices=guis,
-    default=next(iter(guis)),  # the first mentioned key
+    default=next(iter(guis)),
 )
 
 args = parser.parse_args()
-print(args)
+
+data_provider = data_providers[args.data_provider]()
+transformer = transformers[args.transformer]()
+publisher = publishers[args.publisher]()
+gui = guis[args.gui]()
+

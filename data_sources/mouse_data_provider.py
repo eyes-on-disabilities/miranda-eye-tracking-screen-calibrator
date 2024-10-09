@@ -2,11 +2,11 @@ from typing import Tuple
 
 import pymouse
 
-from data_providers.data_provider import DataProvider
+from data_sources.data_provider import DataSource
 
 
-class MouseDataProvider(DataProvider):
-    """Takes the mouse position as data."""
+class MouseDataSource(DataSource):
+    """Takes the mouse position coordinates as the vector."""
 
     def __init__(self):
         self.mouse = pymouse.PyMouse()
