@@ -5,8 +5,6 @@ from guis import guis
 from publishers import publishers
 from tracking_approaches import tracking_approaches
 
-import calibration
-
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--data-source",
@@ -40,3 +38,9 @@ data_source = data_sources[args.data_source]()
 tracking_approach = tracking_approaches[args.tracking_approach]()
 publisher = publishers[args.publisher]()
 gui = guis[args.gui]()
+
+
+gui.start()
+gui.set_message("kek")
+gui.mainloop()
+gui.stop()

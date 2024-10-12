@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Tuple
+from typing import Optional
 
 
 class DataSource(ABC):
@@ -18,7 +19,7 @@ class DataSource(ABC):
         pass
 
     @abstractmethod
-    def get_vector(self) -> Tuple[float, float]:
+    def get_next_vector(self, timeout_in_ms: int) -> Optional[Tuple[float, float]]:
         """Gets the current vector, if one is available.
-        This method shall be called only when the DataSource is running."""
+        Returns None if the DataSource is not running or we hit the timeout."""
         pass
