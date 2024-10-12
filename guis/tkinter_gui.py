@@ -2,6 +2,7 @@ from tkinter import Canvas, Tk
 from typing import Callable
 
 from guis.gui import GUI
+from typing import Tuple
 
 
 class TkinterGUI(GUI):
@@ -62,6 +63,17 @@ class TkinterGUI(GUI):
 
     def unset_debug_text(self):
         self.canvas.delete("debug_text")
+
+    def set_calibration_point(self, vector: Tuple[float, float]):
+        radius = 5
+        x = vector[0]
+        y = vector[1]
+        self.canvas.create_oval(
+            x - radius, y - radius, x + radius, y + radius, fill="red", tag="point"
+        )
+
+    def unset_calibration_point(self):
+        self.canvas.delete("point")
 
     def mainloop(self):
         self.tk.mainloop()

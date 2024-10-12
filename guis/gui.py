@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Callable
+from typing import Tuple
 
 
 class GUI(ABC):
@@ -40,6 +41,14 @@ class GUI(ABC):
 
     @abstractmethod
     def unset_debug_text(self):
+        pass
+
+    @abstractmethod
+    def set_calibration_point(self, vector: Tuple[float, float]):
+        pass
+
+    @abstractmethod
+    def unset_calibration_point():
         pass
 
     @abstractmethod
