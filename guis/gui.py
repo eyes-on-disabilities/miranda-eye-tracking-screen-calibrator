@@ -60,6 +60,14 @@ class GUI(ABC):
         pass
 
     @abstractmethod
+    def set_image(self, path: str, vector: Tuple[float, float]):
+        pass
+
+    @abstractmethod
+    def unset_image():
+        pass
+
+    @abstractmethod
     def mainloop(self):
         """Keeps up the mainloop."""
         pass
