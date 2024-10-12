@@ -4,6 +4,7 @@ from data_sources import data_sources
 from guis import guis
 from publishers import publishers
 from tracking_approaches import tracking_approaches
+from time import sleep
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -39,8 +40,9 @@ tracking_approach = tracking_approaches[args.tracking_approach]()
 publisher = publishers[args.publisher]()
 gui = guis[args.gui]()
 
-
 gui.start()
-gui.set_message("kek")
+
+gui.set_main_text("kek")
+gui.set_debug_text("lol")
 gui.mainloop()
 gui.stop()

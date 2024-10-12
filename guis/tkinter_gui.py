@@ -39,17 +39,29 @@ class TkinterGUI(GUI):
     def bind(self, sequence: str, func: Callable):
         self.tk.bind(sequence, func)
 
-    def set_message(self, text: str):
+    def set_main_text(self, text: str):
         self.canvas.create_text(
             self.screen_width // 2,
             self.screen_height // 2,
             text=text,
             font=("default", 24),
-            tags="message",
+            tags="main_text",
         )
 
-    def unset_message(self):
-        self.canvas.delete("message")
+    def unset_main_text(self):
+        self.canvas.delete("main_text")
+
+    def set_debug_text(self, text: str):
+        self.canvas.create_text(
+            self.screen_width // 2,
+            self.screen_height // 2 + 100,
+            text=text,
+            font=("default", 18),
+            tags="debug_text",
+        )
+
+    def unset_debug_text(self):
+        self.canvas.delete("debug_text")
 
     def mainloop(self):
         self.tk.mainloop()

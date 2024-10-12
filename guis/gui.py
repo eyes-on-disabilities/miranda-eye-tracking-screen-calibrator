@@ -25,12 +25,21 @@ class GUI(ABC):
         pass
 
     @abstractmethod
-    def set_message(self, text: str):
-        """Sets a status message. Could be used for debug information."""
+    def set_main_text(self, text: str):
+        """Sets a text prominent to the user."""
         pass
 
     @abstractmethod
-    def unset_message(self):
+    def unset_main_text(self):
+        pass
+
+    @abstractmethod
+    def set_debug_text(self, text: str):
+        """Sets a text for debugging purposes, less prominent to the user."""
+        pass
+
+    @abstractmethod
+    def unset_debug_text(self):
         pass
 
     @abstractmethod
