@@ -41,5 +41,7 @@ publisher = publishers[args.publisher]()
 gui = guis[args.gui]()
 
 gui.start()
+gui.set_calibration_point((100, 100))
+gui.set_gaze_point((200, 200))
 gui.mainloop()
 gui.stop()

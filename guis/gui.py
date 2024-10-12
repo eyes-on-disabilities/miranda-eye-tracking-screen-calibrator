@@ -52,6 +52,14 @@ class GUI(ABC):
         pass
 
     @abstractmethod
+    def set_gaze_point(self, vector: Tuple[float, float]):
+        pass
+
+    @abstractmethod
+    def unset_gaze_point():
+        pass
+
+    @abstractmethod
     def mainloop(self):
         """Keeps up the mainloop."""
         pass

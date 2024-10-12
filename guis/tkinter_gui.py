@@ -69,11 +69,22 @@ class TkinterGUI(GUI):
         x = vector[0]
         y = vector[1]
         self.canvas.create_oval(
-            x - radius, y - radius, x + radius, y + radius, fill="red", tag="point"
+            x - radius, y - radius, x + radius, y + radius, fill="red", tag="calibration_point"
         )
 
     def unset_calibration_point(self):
-        self.canvas.delete("point")
+        self.canvas.delete("calibration_point")
+
+    def set_gaze_point(self, vector: Tuple[float, float]):
+        radius = 5
+        x = vector[0]
+        y = vector[1]
+        self.canvas.create_oval(
+            x - radius, y - radius, x + radius, y + radius, fill="green", tag="calibration_point"
+        )
+
+    def unset_gaze_point(self):
+        self.canvas.delete("gaze_point")
 
     def mainloop(self):
         self.tk.mainloop()
