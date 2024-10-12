@@ -2,7 +2,7 @@ from typing import Tuple
 
 import pymouse
 
-from data_sources.data_provider import DataSource
+from data_sources.data_source import DataSource
 
 
 class MouseDataSource(DataSource):

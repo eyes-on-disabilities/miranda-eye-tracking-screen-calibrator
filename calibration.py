@@ -15,13 +15,13 @@ class CalibrationResult:
         self.result = result
 
 
-def has_result(data_provider: str, transformer: str) -> bool:
+def has_result(data_source: str, tracking_approach: str) -> bool:
     pass
 
 
-def load_result(data_provider: str, transformer: str) -> CalibrationResult:
+def load_result(data_source: str, tracking_approach: str) -> CalibrationResult:
     pass
 
 
-def save_result(data_provider: str, transformer: str, calibration_result: CalibrationResult):
+def save_result(data_source: str, tracking_approach: str, calibration_result: CalibrationResult):
     pass

@@ -1,26 +1,25 @@
 import argparse
 
-from data_providers import data_providers
+from data_sources import data_sources
 from guis import guis
 from publishers import publishers
-from transformers import transformers
+from tracking_approaches import tracking_approaches
+
+import calibration
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--data-provider",
+    "--data-source",
     help='The provider of input data. default="%(default)s"',
-    choices=data_providers,
-    default=next(iter(data_providers)),  # the first mentioned key
+    choices=data_sources,
+    default=next(iter(data_sources)),  # the first mentioned key
 )
 parser.add_argument(
-    "--transformer",
+    "--tracking-approach",
     type=str,
-    help=(
-        "The transformation technique to transform vectors of the provider to the screen resolution. "
-        'default="%(default)s"'
-    ),
-    choices=transformers,
-    default=next(iter(transformers)),
+    help=("The tracking approach to transform the user's gaze into a certain mouse movement. " 'default="%(default)s"'),
+    choices=tracking_approaches,
+    default=next(iter(tracking_approaches)),
 )
 parser.add_argument(
     "--publisher",
@@ -37,8 +36,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-data_provider = data_providers[args.data_provider]()
-transformer = transformers[args.transformer]()
+data_source = data_sources[args.data_source]()
+tracking_approach = tracking_approaches[args.tracking_approach]()
 publisher = publishers[args.publisher]()
 gui = guis[args.gui]()
-
