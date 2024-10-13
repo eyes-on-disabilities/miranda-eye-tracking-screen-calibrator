@@ -68,6 +68,11 @@ class GUI(ABC):
         pass
 
     @abstractmethod
+    def after(milliseconds: int, func: Callable = None, *args):
+        """Call function with arguments once after given time."""
+        pass
+
+    @abstractmethod
     def mainloop(self):
         """Keeps up the mainloop."""
         pass

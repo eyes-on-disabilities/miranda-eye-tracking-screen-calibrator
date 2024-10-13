@@ -74,7 +74,7 @@ class TkinterGUI(GUI):
         radius = 5
         x = vector[0]
         y = vector[1]
-        self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="green", tag="calibration_point")
+        self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="green", tag="gaze_point")
 
     def unset_gaze_point(self):
         self.canvas.delete("gaze_point")
@@ -87,6 +87,9 @@ class TkinterGUI(GUI):
     def unset_image(self):
         self.canvas.delete("image")
         self.current_image = None
+
+    def after(self, milliseconds: int, func: Callable = None, *args):
+        self.root.after(milliseconds, func, *args)
 
     def mainloop(self):
         self.root.mainloop()

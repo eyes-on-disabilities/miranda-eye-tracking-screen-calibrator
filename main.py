@@ -41,9 +41,14 @@ publisher = publishers[args.publisher]()
 gui = guis[args.gui]()
 
 gui.start()
-# gui.set_calibration_point((100, 100))
-# gui.set_gaze_point((200, 200))
-gui.set_image("assets/test_image.png", (300, 300))
-# gui.unset_image()
+
+
+def loop(pos=100):
+    gui.set_image("assets/test_image.png", (pos, pos))
+    pos += 100
+    gui.after(1000, loop, pos)
+
+
+loop()
 gui.mainloop()
 gui.stop()
