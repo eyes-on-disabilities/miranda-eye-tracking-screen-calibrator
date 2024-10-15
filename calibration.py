@@ -21,7 +21,7 @@ class CalibrationResult:
 
 
 directory = ".calibration_results"
-file_format = f"{directory}/{{}}{{}}.csv"
+file_format = f"{directory}/{{}}_{{}}.csv"
 
 
 def has_result(data_source: str, tracking_approach: str) -> bool:

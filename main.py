@@ -51,18 +51,27 @@ data_source.start()
 monitor = screeninfo.get_monitors()[0]
 screen = (monitor.width, monitor.height)
 
+mouse_position = [screen[0] / 2, screen[1] / 2]
+multi = 5
+
 
 def scale_to_screen(vector):
     return ((vector[0] + 1) * 0.5 * screen[0], (vector[1] - 1) * 0.5 * -screen[1])
 
 
 def show_mouse():
+    global mouse_position
+
     next_vector = data_source.get_next_vector()
     if next_vector is not None:
         mouse_movement = tracking_approach.get_next_mouse_movement(next_vector)
         if mouse_movement is not None:
             if mouse_movement.type == MouseMovementType.TO_POSITION:
-                gui.set_mouse_point(scale_to_screen(mouse_movement.vector))
+                mouse_position = scale_to_screen(mouse_movement.vector)
+            if mouse_movement.type == MouseMovementType.BY:
+                mouse_position[0] += mouse_movement.vector[0] * multi
+                mouse_position[1] -= mouse_movement.vector[1] * multi
+            gui.set_mouse_point(mouse_position)
     gui.after(50, show_mouse)
 
 
