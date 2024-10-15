@@ -1,5 +1,7 @@
 import argparse
 
+import screeninfo
+
 import calibration
 from calibration import CalibrationResult
 from data_sources import data_sources
@@ -46,14 +48,22 @@ gui.start()
 data_source.start()
 
 
+monitor = screeninfo.get_monitors()[0]
+screen = (monitor.width, monitor.height)
+
+
+def scale_to_screen(vector):
+    return ((vector[0] + 1) * 0.5 * screen[0], (vector[1] - 1) * 0.5 * -screen[1])
+
+
 def show_mouse():
     next_vector = data_source.get_next_vector()
     if next_vector is not None:
         mouse_movement = tracking_approach.get_next_mouse_movement(next_vector)
         if mouse_movement is not None:
             if mouse_movement.type == MouseMovementType.TO_POSITION:
-                gui.set_mouse_point(mouse_movement.vector)
-    gui.after(100, show_mouse)
+                gui.set_mouse_point(scale_to_screen(mouse_movement.vector))
+    gui.after(50, show_mouse)
 
 
 def calibrate(iterator, calibration_result=None):
@@ -63,10 +73,26 @@ def calibrate(iterator, calibration_result=None):
         calibration_result.append(data_source.get_next_vector())
     instr = next(iterator, None)
     if instr is not None:
-        gui.set_calibration_instruction(instr)
+        gui.unset_calibration_point()
+        gui.unset_main_text()
+        gui.unset_image()
+
+        vector = instr.vector
+        text = instr.text
+        image = instr.image
+
+        if vector is not None:
+            gui.set_calibration_point(scale_to_screen(vector))
+        if text is not None:
+            gui.set_main_text(text)
+        if image is not None:
+            gui.set_image(image)
         gui.after(2000, calibrate, iterator, calibration_result)
     else:
-        gui.unset_calibration_instruction()
+        gui.unset_calibration_point()
+        gui.unset_main_text()
+        gui.unset_image()
+
         result = CalibrationResult(calibration_result)
         calibration.save_result(args.data_source, args.tracking_approach, result)
         tracking_approach.calibrate(result)

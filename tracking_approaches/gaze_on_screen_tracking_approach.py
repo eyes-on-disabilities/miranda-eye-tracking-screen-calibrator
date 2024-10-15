@@ -35,15 +35,15 @@ class GazeOnScreenTrackingApproach(TrackingApproach):
 
     def get_calibration_instructions(self) -> List[CalibrationInstruction]:
         return [
-            CalibrationInstruction((0, 0), "top left", "assets/test_image.png"),
-            CalibrationInstruction((1, 0), "top right", "assets/test_image.png"),
+            CalibrationInstruction((-1, 1), "top left", "assets/test_image.png"),
+            CalibrationInstruction((1, 1), "top right", "assets/test_image.png"),
             CalibrationInstruction((1, -1), "bottom left", "assets/test_image.png"),
-            CalibrationInstruction((0, -1), "bottom right", "assets/test_image.png"),
+            CalibrationInstruction((-1, -1), "bottom right", "assets/test_image.png"),
         ]
 
     def calibrate(self, calibration_result: CalibrationResult):
         self.transformation_matrix = compute_perspective_transformation_matrix(
-            calibration_result.vectors, [(0, 0), (1, 0), (1, -1), (0, -1)]
+            calibration_result.vectors, [instruction.vector for instruction in self.get_calibration_instructions()]
         )
 
     def get_next_mouse_movement(self, vector: Tuple[float, float]) -> Optional[MouseMovement]:

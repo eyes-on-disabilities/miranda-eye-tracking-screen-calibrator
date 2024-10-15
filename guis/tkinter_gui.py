@@ -5,10 +5,6 @@ from calibration import CalibrationInstruction
 from guis.gui import GUI
 
 
-def scale_to_screen(vector, screen):
-    return (vector[0] * screen[0], vector[1] * -screen[1])
-
-
 class TkinterGUI(GUI):
     """A GUI using Tkinter."""
 
@@ -72,7 +68,7 @@ class TkinterGUI(GUI):
     def set_calibration_point(self, vector: Tuple[float, float], text: str = None):
         self.unset_calibration_point()
         radius = 30
-        x, y = scale_to_screen(vector, self.screen)
+        x, y = vector
         self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="red", tag="calibration_point")
         if text is not None:
             self.canvas.create_text(
@@ -89,7 +85,7 @@ class TkinterGUI(GUI):
     def set_mouse_point(self, vector: Tuple[float, float]):
         self.unset_mouse_point()
         radius = 5
-        x, y = scale_to_screen(vector, self.screen)
+        x, y = vector
         self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="green", tag="mouse_point")
 
     def unset_mouse_point(self):
@@ -106,24 +102,6 @@ class TkinterGUI(GUI):
     def unset_image(self):
         self.canvas.delete("image")
         self.current_image = None
-
-    def set_calibration_instruction(self, calibration_instruction: CalibrationInstruction):
-        self.unset_calibration_instruction()
-        vector = calibration_instruction.vector
-        text = calibration_instruction.text
-        image = calibration_instruction.image
-
-        if vector is not None:
-            self.set_calibration_point(vector)
-        if text is not None:
-            self.set_main_text(text)
-        if image is not None:
-            self.set_image(image)
-
-    def unset_calibration_instruction(self):
-        self.unset_calibration_point()
-        self.unset_main_text()
-        self.unset_image()
 
     def after(self, milliseconds: int, func: Callable = None, *args):
         self.root.after(milliseconds, func, *args)

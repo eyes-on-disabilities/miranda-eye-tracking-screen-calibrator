@@ -13,13 +13,13 @@ class TrackingApproach(ABC):
     Technically speaking, the TrackingApproach takes a vector – likely from a
     DataSource – and translates it to some MouseMovement action.
 
-    Before the TrackingApproach can be used it needs to be calibrated. For guidance,
-    a list of CalibrationInstructions are be provided.
+    Before the TrackingApproach can be used it needs to be calibrated. For guiding
+    a calibration, a list of CalibrationInstructions are provided.
     """
 
     @abstractmethod
     def get_calibration_instructions(self) -> List[CalibrationInstruction]:
-        """Gives a list of CalibrationInstructions for guidance"""
+        """Gives a list of CalibrationInstructions for guiding a calibration."""
         pass
 
     @abstractmethod

@@ -76,16 +76,6 @@ class GUI(ABC):
         pass
 
     @abstractmethod
-    def set_calibration_instruction(self, calibration_instruction: CalibrationInstruction):
-        """Sets a CalibrationInstruction, which is a combination of a calibration point,
-        text, and an image. Overwrites whatever is currently set for these things."""
-        pass
-
-    @abstractmethod
-    def unset_calibration_instruction():
-        pass
-
-    @abstractmethod
     def after(milliseconds: int, func: Callable = None, *args):
         """Call function with arguments once after given time."""
         pass
