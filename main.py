@@ -1,5 +1,4 @@
 import argparse
-from time import sleep
 
 from data_sources import data_sources
 from guis import guis
@@ -16,7 +15,7 @@ parser.add_argument(
 parser.add_argument(
     "--tracking-approach",
     type=str,
-    help=("The tracking approach to transform the user's gaze into a certain mouse movement. " 'default="%(default)s"'),
+    help='The tracking approach to transform the user\'s gaze into a certain mouse movement. default="%(default)s"',
     choices=tracking_approaches,
     default=next(iter(tracking_approaches)),
 )
@@ -42,13 +41,22 @@ gui = guis[args.gui]()
 
 gui.start()
 
-
-def loop(pos=100):
-    gui.set_image("assets/test_image.png", (pos, pos))
-    pos += 100
-    gui.after(1000, loop, pos)
+instructions = iter(tracking_approach.get_calibration_instructions())
 
 
-loop()
+def show_calibration():
+    global instructions
+    instr = next(instructions, None)
+    if instr is not None:
+        gui.set_calibration_instruction(instr)
+        gui.after(1000, show_calibration)
+    else:
+        gui.unset_calibration_instruction()
+        gui.set_main_text("Done")
+        gui.after(1000, lambda: gui.set_debug_text("nice"))
+
+
+show_calibration()
+
 gui.mainloop()
 gui.stop()

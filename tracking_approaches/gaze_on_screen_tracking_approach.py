@@ -11,7 +11,12 @@ class GazeOnScreenTrackingApproach(TrackingApproach):
     Directly translate the user's gaze onto the screen."""
 
     def get_calibration_instructions(self) -> List[CalibrationInstruction]:
-        pass
+        return [
+            CalibrationInstruction((0, 0), "top left", "assets/test_image.png"),
+            CalibrationInstruction((1, 0), "top right", "assets/test_image.png"),
+            CalibrationInstruction((1, -1), "bottom left", "assets/test_image.png"),
+            CalibrationInstruction((0, -1), "bottom right", "assets/test_image.png"),
+        ]
 
     def calibrate(self, calibration_result: CalibrationResult):
         pass

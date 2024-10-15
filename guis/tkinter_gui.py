@@ -1,6 +1,7 @@
 from tkinter import Canvas, PhotoImage, Tk
 from typing import Callable, Tuple
 
+from calibration import CalibrationInstruction
 from guis.gui import GUI
 
 
@@ -38,6 +39,7 @@ class TkinterGUI(GUI):
         self.root.bind(sequence, func)
 
     def set_main_text(self, text: str):
+        self.unset_main_text()
         self.canvas.create_text(
             self.screen_width // 2,
             self.screen_height // 2,
@@ -50,9 +52,10 @@ class TkinterGUI(GUI):
         self.canvas.delete("main_text")
 
     def set_debug_text(self, text: str):
+        self.unset_debug_text()
         self.canvas.create_text(
             self.screen_width // 2,
-            self.screen_height // 2 + 100,
+            self.screen_height // 2 + 128,
             text=text,
             font=("default", 18),
             tags="debug_text",
@@ -61,32 +64,63 @@ class TkinterGUI(GUI):
     def unset_debug_text(self):
         self.canvas.delete("debug_text")
 
-    def set_calibration_point(self, vector: Tuple[float, float]):
-        radius = 5
+    def set_calibration_point(self, vector: Tuple[float, float], text: str = None):
+        self.unset_calibration_point()
+        radius = 30
         x = vector[0]
         y = vector[1]
         self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="red", tag="calibration_point")
+        if text is not None:
+            self.canvas.create_text(
+                x,
+                y,
+                text=text,
+                font=("default", 18),
+                tags="calibration_point",
+            )
 
     def unset_calibration_point(self):
         self.canvas.delete("calibration_point")
 
-    def set_gaze_point(self, vector: Tuple[float, float]):
+    def set_mouse_point(self, vector: Tuple[float, float]):
+        self.unset_mouse_point()
         radius = 5
         x = vector[0]
         y = vector[1]
-        self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="green", tag="gaze_point")
+        self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="green", tag="mouse_point")
 
-    def unset_gaze_point(self):
-        self.canvas.delete("gaze_point")
+    def unset_mouse_point(self):
+        self.canvas.delete("mouse_point")
 
-    def set_image(self, path: str, vector: Tuple[float, float]):
+    def set_image(self, path: str):
+        self.unset_image()
         # needs to be stored as a variable, since otherwire it will be removed by the garbage collector.
         self.current_image = PhotoImage(file=path)
-        self.canvas.create_image(vector, image=self.current_image, tag="image")
+        self.canvas.create_image(
+            (self.screen_width / 2, self.screen_height / 2 + 64), image=self.current_image, tag="image"
+        )
 
     def unset_image(self):
         self.canvas.delete("image")
         self.current_image = None
+
+    def set_calibration_instruction(self, calibration_instruction: CalibrationInstruction):
+        self.unset_calibration_instruction()
+        vector = calibration_instruction.vector
+        text = calibration_instruction.text
+        image = calibration_instruction.image
+
+        if vector is not None:
+            self.set_calibration_point((vector[0] * self.screen_width, vector[1] * -self.screen_height))
+        if text is not None:
+            self.set_main_text(text)
+        if image is not None:
+            self.set_image(image)
+
+    def unset_calibration_instruction(self):
+        self.unset_calibration_point()
+        self.unset_main_text()
+        self.unset_image()
 
     def after(self, milliseconds: int, func: Callable = None, *args):
         self.root.after(milliseconds, func, *args)
