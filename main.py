@@ -4,6 +4,7 @@ import calibration
 from calibration import CalibrationResult
 from data_sources import data_sources
 from guis import guis
+from mouse_movement import MouseMovementType
 from publishers import publishers
 from tracking_approaches import tracking_approaches
 
@@ -44,12 +45,14 @@ gui = guis[args.gui]()
 gui.start()
 data_source.start()
 
+
 def show_mouse():
     next_vector = data_source.get_next_vector()
     if next_vector is not None:
-        next_vector = tracking_approach.get_next_mouse_movement(next_vector)
-        if next_vector is not None:
-            gui.set_mouse_point(next_vector)
+        mouse_movement = tracking_approach.get_next_mouse_movement(next_vector)
+        if mouse_movement is not None:
+            if mouse_movement.type == MouseMovementType.TO_POSITION:
+                gui.set_mouse_point(mouse_movement.vector)
     gui.after(100, show_mouse)
 
 

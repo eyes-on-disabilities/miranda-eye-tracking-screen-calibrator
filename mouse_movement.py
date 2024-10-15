@@ -9,5 +9,5 @@ class MouseMovementType(Enum):
 
 class MouseMovement():
     def __init__(self, mouse_movement_type: MouseMovementType, vector: Tuple[float, float]):
-        self.mouse_movement_type = mouse_movement_type
+        self.type = mouse_movement_type
         self.vector = vector
