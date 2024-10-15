@@ -1,5 +1,6 @@
 import argparse
 
+from calibration import CalibrationResult
 from data_sources import data_sources
 from guis import guis
 from publishers import publishers
@@ -43,20 +44,22 @@ gui.start()
 
 instructions = iter(tracking_approach.get_calibration_instructions())
 
+calibration_result = CalibrationResult([(0, 0), (1920, 0), (1920, 1080), (0, 1080)])
 
-def show_calibration():
-    global instructions
-    instr = next(instructions, None)
-    if instr is not None:
-        gui.set_calibration_instruction(instr)
-        gui.after(1000, show_calibration)
-    else:
-        gui.unset_calibration_instruction()
-        gui.set_main_text("Done")
-        gui.after(1000, lambda: gui.set_debug_text("nice"))
+tracking_approach.calibrate(calibration_result)
 
 
-show_calibration()
+def show_mouse():
+    next_vector = data_source.get_next_vector()
+    if next_vector is not None:
+        next_vector = tracking_approach.get_next_mouse_movement(next_vector)
+        print(next_vector)
+        if next_vector is not None:
+            gui.set_mouse_point(next_vector)
+    gui.after(100, show_mouse)
+
+
+show_mouse()
 
 gui.mainloop()
 gui.stop()

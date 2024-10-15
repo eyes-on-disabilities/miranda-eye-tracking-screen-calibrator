@@ -5,6 +5,10 @@ from calibration import CalibrationInstruction
 from guis.gui import GUI
 
 
+def scale_to_screen(vector, screen):
+    return (vector[0] * screen[0], vector[1] * -screen[1])
+
+
 class TkinterGUI(GUI):
     """A GUI using Tkinter."""
 
@@ -17,6 +21,7 @@ class TkinterGUI(GUI):
         self.root.attributes("-fullscreen", True)
         self.screen_width = self.root.winfo_screenwidth()
         self.screen_height = self.root.winfo_screenheight()
+        self.screen = (self.screen_width, self.screen_height)
 
         # highlightthickness removes the border
         self.canvas = Canvas(
@@ -67,8 +72,7 @@ class TkinterGUI(GUI):
     def set_calibration_point(self, vector: Tuple[float, float], text: str = None):
         self.unset_calibration_point()
         radius = 30
-        x = vector[0]
-        y = vector[1]
+        x, y = scale_to_screen(vector, self.screen)
         self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="red", tag="calibration_point")
         if text is not None:
             self.canvas.create_text(
@@ -85,8 +89,7 @@ class TkinterGUI(GUI):
     def set_mouse_point(self, vector: Tuple[float, float]):
         self.unset_mouse_point()
         radius = 5
-        x = vector[0]
-        y = vector[1]
+        x, y = scale_to_screen(vector, self.screen)
         self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="green", tag="mouse_point")
 
     def unset_mouse_point(self):
@@ -111,7 +114,7 @@ class TkinterGUI(GUI):
         image = calibration_instruction.image
 
         if vector is not None:
-            self.set_calibration_point((vector[0] * self.screen_width, vector[1] * -self.screen_height))
+            self.set_calibration_point(vector)
         if text is not None:
             self.set_main_text(text)
         if image is not None:
