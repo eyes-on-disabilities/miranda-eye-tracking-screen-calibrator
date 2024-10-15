@@ -1,5 +1,6 @@
 import argparse
 
+import calibration
 from calibration import CalibrationResult
 from data_sources import data_sources
 from guis import guis
@@ -42,24 +43,38 @@ gui = guis[args.gui]()
 
 gui.start()
 
-instructions = iter(tracking_approach.get_calibration_instructions())
-
-calibration_result = CalibrationResult([(0, 0), (1920, 0), (1920, 1080), (0, 1080)])
-
-tracking_approach.calibrate(calibration_result)
-
 
 def show_mouse():
     next_vector = data_source.get_next_vector()
     if next_vector is not None:
         next_vector = tracking_approach.get_next_mouse_movement(next_vector)
-        print(next_vector)
         if next_vector is not None:
             gui.set_mouse_point(next_vector)
     gui.after(100, show_mouse)
 
 
-show_mouse()
+def calibrate(iterator, calibration_result=None):
+    if calibration_result is None:
+        calibration_result = []
+    else:
+        calibration_result.append(data_source.get_next_vector())
+    instr = next(iterator, None)
+    if instr is not None:
+        gui.set_calibration_instruction(instr)
+        gui.after(2000, calibrate, iterator, calibration_result)
+    else:
+        gui.unset_calibration_instruction()
+        tracking_approach.calibrate(CalibrationResult(calibration_result))
+        show_mouse()
+
+
+if calibration.has_result(args.data_source, args.tracking_approach):
+    tracking_approach.calibrate(calibration.load_result(args.data_source, args.tracking_approach))
+    show_mouse()
+else:
+    calibration_instructions = iter(tracking_approach.get_calibration_instructions())
+    calibrate(calibration_instructions)
+
 
 gui.mainloop()
 gui.stop()
