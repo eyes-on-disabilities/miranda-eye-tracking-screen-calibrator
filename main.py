@@ -52,7 +52,7 @@ monitor = screeninfo.get_monitors()[0]
 screen = (monitor.width, monitor.height)
 
 mouse_position = [screen[0] / 2, screen[1] / 2]
-multi = 5
+multi = 10
 
 
 def scale_to_screen(vector):
@@ -71,6 +71,15 @@ def show_mouse():
             if mouse_movement.type == MouseMovementType.BY:
                 mouse_position[0] += mouse_movement.vector[0] * multi
                 mouse_position[1] -= mouse_movement.vector[1] * multi
+                if mouse_position[0] < 0:
+                    mouse_position[0] = 0
+                if mouse_position[0] > screen[0]:
+                    mouse_position[0] = screen[0]
+                if mouse_position[1] < 0:
+                    mouse_position[1] = 0
+                if mouse_position[1] > screen[1]:
+                    mouse_position[1] = screen[1]
+
             gui.set_mouse_point(mouse_position)
     gui.after(50, show_mouse)
 
