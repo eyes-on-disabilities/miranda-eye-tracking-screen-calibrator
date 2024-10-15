@@ -1,4 +1,6 @@
-from typing import Any, Tuple, Optional
+import csv
+import os
+from typing import List, Optional, Tuple
 
 
 class CalibrationInstruction:
@@ -14,17 +16,29 @@ class CalibrationInstruction:
 
 
 class CalibrationResult:
-    def __init__(self, result: Any):
-        self.result = result
+    def __init__(self, vectors: List[Tuple[float, float]]):
+        self.vectors = vectors
+
+
+directory = ".calibration_results"
+file_format = f"{directory}/{{}}{{}}.csv"
 
 
 def has_result(data_source: str, tracking_approach: str) -> bool:
-    return False
+    return os.path.exists(file_format.format(data_source, tracking_approach))
 
 
-def load_result(data_source: str, tracking_approach: str) -> Optional[CalibrationResult]:
-    return None
+def load_result(data_source: str, tracking_approach: str) -> CalibrationResult:
+    vectors = []
+    with open(file_format.format(data_source, tracking_approach), "r") as f:
+        for row in csv.reader(f):
+            vectors.append((float(row[0]), float(row[1])))  # Convert strings to floats
+    return CalibrationResult(vectors)
 
 
 def save_result(data_source: str, tracking_approach: str, calibration_result: CalibrationResult):
-    pass
+    if not os.path.exists(directory):
+        os.mkdir(directory)
+    with open(file_format.format(data_source, tracking_approach), 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerows(calibration_result.vectors)

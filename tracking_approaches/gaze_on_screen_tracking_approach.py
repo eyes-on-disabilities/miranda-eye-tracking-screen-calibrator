@@ -43,7 +43,7 @@ class GazeOnScreenTrackingApproach(TrackingApproach):
 
     def calibrate(self, calibration_result: CalibrationResult):
         self.transformation_matrix = compute_perspective_transformation_matrix(
-            calibration_result.result, [(0, 0), (1, 0), (1, -1), (0, -1)]
+            calibration_result.vectors, [(0, 0), (1, 0), (1, -1), (0, -1)]
         )
 
     def get_next_mouse_movement(self, vector: Tuple[float, float]) -> Optional[MouseMovement]:

@@ -42,7 +42,7 @@ publisher = publishers[args.publisher]()
 gui = guis[args.gui]()
 
 gui.start()
-
+data_source.start()
 
 def show_mouse():
     next_vector = data_source.get_next_vector()
@@ -64,7 +64,9 @@ def calibrate(iterator, calibration_result=None):
         gui.after(2000, calibrate, iterator, calibration_result)
     else:
         gui.unset_calibration_instruction()
-        tracking_approach.calibrate(CalibrationResult(calibration_result))
+        result = CalibrationResult(calibration_result)
+        calibration.save_result(args.data_source, args.tracking_approach, result)
+        tracking_approach.calibrate(result)
         show_mouse()
 
 
@@ -78,3 +80,4 @@ else:
 
 gui.mainloop()
 gui.stop()
+data_source.stop()
