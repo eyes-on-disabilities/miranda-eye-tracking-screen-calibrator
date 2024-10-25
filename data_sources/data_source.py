@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Tuple
+from misc import Vector
 from typing import Optional
 
 
@@ -10,16 +10,16 @@ class DataSource(ABC):
 
     @abstractmethod
     def start(self):
-        """Start the DataSource."""
+        """Starts the DataSource."""
         pass
 
     @abstractmethod
     def stop(self):
-        """Stop the DataSource."""
+        """Stops the DataSource."""
         pass
 
     @abstractmethod
-    def get_next_vector(self, timeout_in_ms: int) -> Optional[Tuple[float, float]]:
+    def get_next_vector(self, timeout_in_ms: int) -> Optional[Vector]:
         """Gets the current vector, if one is available.
         Returns None if the DataSource is not running or we hit the timeout."""
         pass

@@ -1,9 +1,9 @@
-from typing import Tuple
+from misc import Vector
+from typing import Optional
 
 import pymouse
 
 from data_sources.data_source import DataSource
-from typing import Optional
 
 
 class MouseDataSource(DataSource):
@@ -18,5 +18,5 @@ class MouseDataSource(DataSource):
     def stop(self):
         pass
 
-    def get_next_vector(self) -> Optional[Tuple[float, float]]:
+    def get_next_vector(self) -> Optional[Vector]:
         return self.mouse.position()

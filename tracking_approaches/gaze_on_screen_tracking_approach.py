@@ -1,4 +1,5 @@
-from typing import List, Optional, Tuple
+from misc import Vector
+from typing import List, Optional
 
 import numpy as np
 
@@ -46,6 +47,6 @@ class GazeOnScreenTrackingApproach(TrackingApproach):
             calibration_result.vectors, [instruction.vector for instruction in self.get_calibration_instructions()]
         )
 
-    def get_next_mouse_movement(self, vector: Tuple[float, float]) -> Optional[MouseMovement]:
+    def get_next_mouse_movement(self, vector: Vector) -> Optional[MouseMovement]:
         new_vector = perspective_transform(self.transformation_matrix, vector)
         return MouseMovement(MouseMovementType.TO_POSITION, new_vector)

@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
+from misc import Vector
 from typing import Callable
-from typing import Tuple
-from calibration import CalibrationInstruction
 
 
 class GUI(ABC):
@@ -45,7 +44,7 @@ class GUI(ABC):
         pass
 
     @abstractmethod
-    def set_calibration_point(self, vector: Tuple[float, float], text: str):
+    def set_calibration_point(self, vector: Vector, text: str):
         """Sets a calibration point.
         A calibration point is a point on the screen which the user shall look at.
         Additionally, a text can be displayed inside or next to the point, e.g. a countdown."""
@@ -56,7 +55,7 @@ class GUI(ABC):
         pass
 
     @abstractmethod
-    def set_mouse_point(self, vector: Tuple[float, float]):
+    def set_mouse_point(self, vector: Vector):
         """Sets a mouse point.
         A mouse point is a point which represents where
         the mouse position lands according to the tracking approach."""

@@ -12,8 +12,7 @@ from guis import guis
 from mouse_movement import MouseMovementType
 from publishers import publishers
 from tracking_approaches import tracking_approaches
-
-type Vector = tuple[float, float]
+from misc import Vector
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -51,6 +50,7 @@ gui = guis[args.gui]()
 
 gui.start()
 data_source.start()
+publisher.start()
 
 
 monitor = screeninfo.get_monitors()[0]
@@ -183,3 +183,4 @@ load_calibration(
 gui.mainloop()
 gui.stop()
 data_source.stop()
+publisher.stop()

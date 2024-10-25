@@ -1,5 +1,5 @@
-from publishers.print_publisher import PrintPublisher
+from publishers.udp_publisher import UdpPublisher
 
 publishers = {
-    "print": PrintPublisher,
+    "udp": UdpPublisher,
 }

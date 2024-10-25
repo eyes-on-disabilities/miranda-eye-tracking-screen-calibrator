@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Tuple
+from misc import Vector
 
 
 class Publisher(ABC):
@@ -8,6 +8,16 @@ class Publisher(ABC):
     or pushing the vector to a message queue."""
 
     @abstractmethod
-    def push(self, vector: Tuple[float, float]):
+    def start(self):
+        """Starts the Publisher."""
+        pass
+
+    @abstractmethod
+    def stop(self):
+        """Stops the Publisher."""
+        pass
+
+    @abstractmethod
+    def push(self, vector: Vector):
         """pushes the vector to the output method."""
         pass

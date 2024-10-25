@@ -1,3 +1,4 @@
+from misc import Vector
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -47,7 +48,7 @@ class DPadTrackingApproach(TrackingApproach):
             calibration_result.vectors, [(-1, 1), (1, 1), (1, -1), (-1, -1)]
         )
 
-    def get_next_mouse_movement(self, vector: Tuple[float, float]) -> Optional[MouseMovement]:
+    def get_next_mouse_movement(self, vector: Vector) -> Optional[MouseMovement]:
         new_vector = perspective_transform(self.transformation_matrix, vector)
 
         if (-1 <= new_vector[0] <= 1) and (1 >= new_vector[1] >= -1):

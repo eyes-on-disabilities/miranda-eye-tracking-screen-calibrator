@@ -1,6 +1,7 @@
 import csv
 import os
-from typing import List, Optional, Tuple
+from misc import Vector
+from typing import List
 
 
 class CalibrationInstruction:
@@ -9,14 +10,14 @@ class CalibrationInstruction:
     the vector shall just have a value range of -1.0<=x<=1.0 and 1.0>=y>=-1.0.
     E.g. (-1.0,1.0) is the upper left corner of the screen, and (-1.0,-1.0) is the lower right corner."""
 
-    def __init__(self, vector: Tuple[float, float] = None, text: str = None, image: str = None):
+    def __init__(self, vector: Vector = None, text: str = None, image: str = None):
         self.vector = vector
         self.text = text
         self.image = image
 
 
 class CalibrationResult:
-    def __init__(self, vectors: List[Tuple[float, float]]):
+    def __init__(self, vectors: List[Vector]):
         self.vectors = vectors
 
 
@@ -39,6 +40,6 @@ def load_result(data_source: str, tracking_approach: str) -> CalibrationResult:
 def save_result(data_source: str, tracking_approach: str, calibration_result: CalibrationResult):
     if not os.path.exists(directory):
         os.mkdir(directory)
-    with open(file_format.format(data_source, tracking_approach), 'w', newline='') as f:
+    with open(file_format.format(data_source, tracking_approach), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerows(calibration_result.vectors)

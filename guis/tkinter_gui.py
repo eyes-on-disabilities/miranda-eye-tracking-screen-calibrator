@@ -1,7 +1,7 @@
 from tkinter import Canvas, PhotoImage, Tk
-from typing import Callable, Tuple
+from misc import Vector
+from typing import Callable
 
-from calibration import CalibrationInstruction
 from guis.gui import GUI
 
 
@@ -65,7 +65,7 @@ class TkinterGUI(GUI):
     def unset_debug_text(self):
         self.canvas.delete("debug_text")
 
-    def set_calibration_point(self, vector: Tuple[float, float], text: str = None):
+    def set_calibration_point(self, vector: Vector, text: str = None):
         self.unset_calibration_point()
         radius = 30
         x, y = vector
@@ -82,7 +82,7 @@ class TkinterGUI(GUI):
     def unset_calibration_point(self):
         self.canvas.delete("calibration_point")
 
-    def set_mouse_point(self, vector: Tuple[float, float]):
+    def set_mouse_point(self, vector: Vector):
         self.unset_mouse_point()
         radius = 5
         x, y = vector

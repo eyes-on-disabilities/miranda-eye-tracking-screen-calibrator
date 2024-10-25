@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
-from calibration import CalibrationInstruction
-from calibration import CalibrationResult
-from typing import Optional
+from misc import Vector
+from typing import List, Optional
+
+from calibration import CalibrationInstruction, CalibrationResult
 from mouse_movement import MouseMovement
 
 
@@ -29,7 +29,7 @@ class TrackingApproach(ABC):
         pass
 
     @abstractmethod
-    def get_next_mouse_movement(self, vector: Tuple[float, float]) -> Optional[MouseMovement]:
+    def get_next_mouse_movement(self, vector: Vector) -> Optional[MouseMovement]:
         """Based on a vector, a MouseMovement might be translated. For example, when looking at
         a certain position, the mouse shall move to a certain position on the screen."""
         pass
