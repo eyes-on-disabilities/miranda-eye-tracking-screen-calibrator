@@ -7,7 +7,6 @@ from data_sources.data_source import DataSource
 
 
 class MouseDataSource(DataSource):
-    """Takes the mouse position coordinates as the vector."""
 
     def __init__(self):
         self.mouse = pymouse.PyMouse()

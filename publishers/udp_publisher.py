@@ -22,5 +22,4 @@ class UdpPublisher(Publisher):
     def push(self, vector: Vector):
         message = {"x": vector[0], "y": vector[1], "timestamp": str(datetime.now())}
         json_message = json.dumps(message)
-        print(json_message)
         self.sock.sendto(json_message.encode(), self.server_address)
