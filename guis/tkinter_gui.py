@@ -1,8 +1,8 @@
 from tkinter import Canvas, PhotoImage, Tk
-from misc import Vector
 from typing import Callable
 
 from guis.gui import GUI
+from misc import Vector
 
 
 class TkinterGUI(GUI):
@@ -30,11 +30,6 @@ class TkinterGUI(GUI):
         self.root.bind("<Control-c>", self.close_window)
 
         self.canvas.pack()
-
-    def stop(self):
-        # TODO check if already destroyed.
-        # When entering and then exiting the mainloop, tk is already destroyed.
-        self.root.destroy()
 
     def bind(self, sequence: str, func: Callable):
         self.root.bind(sequence, func)

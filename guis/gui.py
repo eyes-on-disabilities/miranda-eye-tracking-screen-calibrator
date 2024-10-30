@@ -11,11 +11,6 @@ class GUI(ABC):
         pass
 
     @abstractmethod
-    def stop(self):
-        """Stops the GUI."""
-        pass
-
-    @abstractmethod
     def bind(self, sequence: str, func: Callable):
         """bind a sequence, like a button press, to a function call.
         See all bindings here: `https://tcl.tk/man/tcl8.7/TkCmd/keysyms.html`
