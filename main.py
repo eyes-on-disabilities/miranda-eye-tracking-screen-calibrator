@@ -181,6 +181,5 @@ load_calibration(
 
 
 gui.mainloop()
-gui.stop()
 data_source.stop()
 publisher.stop()
