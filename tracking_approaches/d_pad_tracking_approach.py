@@ -37,10 +37,10 @@ class DPadTrackingApproach(TrackingApproach):
 
     def get_calibration_instructions(self) -> List[CalibrationInstruction]:
         return [
-            CalibrationInstruction((-1, 1), "top left", "assets/test_image.png"),
-            CalibrationInstruction((1, 1), "top right", "assets/test_image.png"),
-            CalibrationInstruction((1, -1), "bottom left", "assets/test_image.png"),
-            CalibrationInstruction((-1, -1), "bottom right", "assets/test_image.png"),
+            CalibrationInstruction((-1, 1), "d-pad: top left"),
+            CalibrationInstruction((1, 1), "d-pad: top right"),
+            CalibrationInstruction((1, -1), "d-pad: bottom left"),
+            CalibrationInstruction((-1, -1), "d-pad: bottom right"),
         ]
 
     def calibrate(self, calibration_result: CalibrationResult):

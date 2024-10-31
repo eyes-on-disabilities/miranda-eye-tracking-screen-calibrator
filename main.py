@@ -9,10 +9,11 @@ import calibration
 from calibration import CalibrationInstruction, CalibrationResult
 from data_sources import data_sources
 from guis import guis
+from guis.tkinter_gui import MainMenuGUI
+from misc import Vector
 from mouse_movement import MouseMovementType
 from publishers import publishers
 from tracking_approaches import tracking_approaches
-from misc import Vector
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -43,14 +44,69 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-data_source = data_sources[args.data_source]()
-tracking_approach = tracking_approaches[args.tracking_approach]()
-publisher = publishers[args.publisher]()
-gui = guis[args.gui]()
+selected_data_source = args.data_source
+selected_tracking_approach = args.tracking_approach
+selected_publisher = args.publisher
 
-gui.start()
+data_source = data_sources[selected_data_source]["class"]()
+tracking_approach = tracking_approaches[selected_tracking_approach]["class"]()
+publisher = publishers[selected_publisher]()
+# gui = guis[args.gui]()
+
+main_menu = MainMenuGUI()
 data_source.start()
 publisher.start()
+
+gui = None
+
+
+def reload_data_source(new_data_source):
+    global selected_data_source, data_source, has_calibration_result
+    selected_data_source = new_data_source
+    if data_source is not None:
+        data_source.stop()
+    data_source = data_sources[selected_data_source]["class"]()
+    data_source.start()
+
+    has_calibration_result = calibration.has_result(selected_data_source, selected_tracking_approach)
+    main_menu.set_has_calibration_result(has_calibration_result)
+    if has_calibration_result:
+        current_calibration_result = calibration.load_result(selected_data_source, selected_tracking_approach)
+        tracking_approach.calibrate(current_calibration_result)
+
+
+def reload_tracking_approach(new_tracking_approach):
+    global selected_tracking_approach, tracking_approach, has_calibration_result
+    selected_tracking_approach = new_tracking_approach
+    tracking_approach = tracking_approaches[selected_tracking_approach]["class"]()
+
+    has_calibration_result = calibration.has_result(selected_data_source, selected_tracking_approach)
+    main_menu.set_has_calibration_result(has_calibration_result)
+    if has_calibration_result:
+        current_calibration_result = calibration.load_result(selected_data_source, selected_tracking_approach)
+        tracking_approach.calibrate(current_calibration_result)
+
+
+def on_calibration_requested(calibration_gui):
+    global gui
+    gui = calibration_gui
+    execute_calibrations(iter(tracking_approach.get_calibration_instructions()), show_mouse)
+
+
+main_menu.set_data_source_options(data_sources)
+main_menu.set_tracking_approach_options(tracking_approaches)
+main_menu.set_current_data_source(selected_data_source)
+main_menu.set_current_tracking_approach(selected_tracking_approach)
+main_menu.on_data_source_change_requested(reload_data_source)
+main_menu.on_tracking_approach_change_requested(reload_tracking_approach)
+
+main_menu.on_calibration_requested(on_calibration_requested)
+
+has_calibration_result = calibration.has_result(selected_data_source, selected_tracking_approach)
+main_menu.set_has_calibration_result(has_calibration_result)
+if has_calibration_result:
+    current_calibration_result = calibration.load_result(selected_data_source, selected_tracking_approach)
+    tracking_approach.calibrate(current_calibration_result)
 
 
 monitor = screeninfo.get_monitors()[0]
@@ -82,14 +138,6 @@ def update_mouse_position(mouse_movement):
             mouse_position[1] = screen[1]
 
 
-def load_calibration(on_success: Callable, on_failure: Callable):
-    if calibration.has_result(args.data_source, args.tracking_approach):
-        tracking_approach.calibrate(calibration.load_result(args.data_source, args.tracking_approach))
-        on_success()
-    else:
-        on_failure()
-
-
 def execute_calibrations(
     calibration_instructions: Iterator,
     on_finish: Callable,
@@ -102,8 +150,10 @@ def execute_calibrations(
         gui.unset_main_text()
         gui.unset_image()
         result = CalibrationResult(collected_vectors)
-        calibration.save_result(args.data_source, args.tracking_approach, result)
+        calibration.delete_result(selected_data_source, selected_tracking_approach)
+        calibration.save_result(selected_data_source, selected_tracking_approach, result)
         tracking_approach.calibrate(result)
+        main_menu.set_has_calibration_result(True)
         on_finish()
     else:
         execute_calibration(
@@ -163,7 +213,9 @@ def collect_calibration_vectors(
         gui.after(100, collect_calibration_vectors, calibration_instruction, on_finish, end_time, vectors)
 
 
-def show_mouse():
+def show_mouse(entered_first_time=True):
+    if entered_first_time:
+        gui.set_main_text("Calibration Done. Press <ESC> or <CTRL-c> or close this window.")
     next_vector = data_source.get_next_vector()
     if next_vector is not None:
         mouse_movement = tracking_approach.get_next_mouse_movement(next_vector)
@@ -171,15 +223,9 @@ def show_mouse():
             update_mouse_position(mouse_movement)
             gui.set_mouse_point(mouse_position)
             publisher.push(mouse_position)
-    gui.after(50, show_mouse)
+    gui.after(50, show_mouse, False)
 
 
-load_calibration(
-    on_success=show_mouse,
-    on_failure=lambda: execute_calibrations(iter(tracking_approach.get_calibration_instructions()), show_mouse),
-)
-
-
-gui.mainloop()
+main_menu.mainloop()
 data_source.stop()
 publisher.stop()

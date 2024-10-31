@@ -1,7 +1,8 @@
 import csv
 import os
-from misc import Vector
 from typing import List
+
+from misc import Vector
 
 
 class CalibrationInstruction:
@@ -43,3 +44,9 @@ def save_result(data_source: str, tracking_approach: str, calibration_result: Ca
     with open(file_format.format(data_source, tracking_approach), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerows(calibration_result.vectors)
+
+
+def delete_result(data_source: str, tracking_approach: str):
+    config_file = file_format.format(data_source, tracking_approach)
+    if os.path.exists(config_file):
+        os.remove(config_file)
