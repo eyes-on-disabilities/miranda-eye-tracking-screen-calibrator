@@ -104,22 +104,31 @@ def reload_calibration_result():
 def loop():
     global last_data_source_vector, last_mouse_position
     while running:
-        last_data_source_vector = data_source.get_next_vector()
-        if main_menu_gui is not None:
-            main_menu_gui.set_data_source_has_data(last_data_source_vector is not None)
-        if last_data_source_vector is not None and tracking_approach.is_calibrated():
-            mouse_movement = tracking_approach.get_next_mouse_movement(last_data_source_vector)
-            if mouse_movement is not None:
-                last_mouse_position = get_new_mouse_position(mouse_movement, last_mouse_position)
-                if calibration_gui is not None:
-                    calibration_gui.set_mouse_point(last_mouse_position)
-                publisher.push(last_mouse_position)
-        time.sleep(0.5)
+        try:
+            last_data_source_vector = data_source.get_next_vector()
+            if main_menu_gui is not None:
+                main_menu_gui.set_data_source_has_data(last_data_source_vector is not None)
+            if last_data_source_vector is not None and tracking_approach.is_calibrated():
+                mouse_movement = tracking_approach.get_next_mouse_movement(last_data_source_vector)
+                if mouse_movement is not None:
+                    last_mouse_position = get_new_mouse_position(mouse_movement, last_mouse_position)
+                    if calibration_gui is not None:
+                        calibration_gui.set_mouse_point(last_mouse_position)
+                    publisher.push(last_mouse_position)
+        except Exception as e:
+            print(e)
+        time.sleep(0.1)
+
+
+def unset_calibration_gui():
+    global calibration_gui
+    calibration_gui = None
 
 
 def on_calibration_requested(new_calibration_gui):
     global calibration_gui
     calibration_gui = new_calibration_gui
+    calibration_gui.on_close(unset_calibration_gui)
     execute_calibrations(
         iter(tracking_approach.get_calibration_instructions()),
         lambda: calibration_gui.set_main_text("Calibration Done. Press <ESC> or <CTRL-c> or close this window."),

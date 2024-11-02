@@ -223,8 +223,15 @@ class CalibrationGUI:
         )
         self.canvas.pack()
 
+        self.on_close_callback = None
+
     def _close_window(self, event):
         self.window.destroy()
+        if self.on_close_callback is not None:
+            self.on_close_callback()
+
+    def on_close(self, func):
+        self.on_close_callback = func
 
     def bind(self, sequence: str, func: Callable):
         self.window.bind(sequence, func)
