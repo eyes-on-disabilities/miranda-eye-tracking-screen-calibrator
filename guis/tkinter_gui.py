@@ -1,3 +1,4 @@
+import platform
 from tkinter import Button, Canvas, Frame, Label, PhotoImage, Tk, Toplevel
 from typing import Callable
 
@@ -109,7 +110,15 @@ class MainMenuGUI:
         self.window.geometry("500x500")
         self.window.resizable(width=False, height=False)
 
-        self.image = Image.open("assets/icon.ico")
+        os_name = platform.system()
+        if os_name == "Windows":
+            self.window.iconbitmap("assets/icon.ico")
+        elif os_name in ("Linux", "Darwin"):  # Darwin is for macOS
+            icon_image = Image.open("assets/icon.png")
+            icon_photo = ImageTk.PhotoImage(icon_image)
+            self.window.iconphoto(False, icon_photo)
+
+        self.image = Image.open("assets/icon.png")
         self.tk_image = ImageTk.PhotoImage(self.image)
         image_label = Label(self.window, image=self.tk_image)
         image_label.pack(pady=30)
@@ -192,6 +201,15 @@ class CalibrationGUI:
     def __init__(self, root_window):
         self.window = Toplevel(root_window)
         self.window.title("Haha")
+
+        os_name = platform.system()
+        if os_name == "Windows":
+            self.window.iconbitmap("assets/icon.ico")
+        elif os_name in ("Linux", "Darwin"):  # Darwin is for macOS
+            icon_image = Image.open("assets/icon.png")
+            icon_photo = ImageTk.PhotoImage(icon_image)
+            self.window.iconphoto(False, icon_photo)
+
         self.window.attributes("-fullscreen", True)
 
         self.window.bind("<Escape>", self._close_window)

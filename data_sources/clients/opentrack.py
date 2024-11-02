@@ -43,6 +43,5 @@ class Opentrack:
             if len(data) == self.buffer_size:
                 new_values = struct.unpack("6d", data)
                 self.update_last_position(new_values)
-        except socket.timeout:
         finally:
             return self.last_position
