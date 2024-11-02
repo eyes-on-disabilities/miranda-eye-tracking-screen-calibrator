@@ -33,7 +33,7 @@ class Dropdown:
     def set_current_selection(self, key):
         for i, entry in enumerate(self.menu_data):
             if key == self.menu_data[entry]["key"]:
-                self.show_selection(
+                self.select_entry(
                     self.menu_data[entry]["key"],
                     self.menu_data[entry]["title"],
                     self.menu_data[entry]["description"],
@@ -45,7 +45,7 @@ class Dropdown:
     def on_selection_changed(self, callback):
         self.selection_callback = callback
 
-    def show_selection(self, key, headline, description, icon, trigger_callback=True):
+    def select_entry(self, key, headline, description, icon, trigger_callback=True):
         self.dropdown_button.config(text=headline, image=icon)
         self.dropdown_frame.place_forget()
         if trigger_callback and self.selection_callback:
@@ -84,19 +84,19 @@ class Dropdown:
             item_frame.bind(
                 "<Button-1>",
                 lambda e, key=key, hl=headline, desc=description, icon=self.icons[i]: [
-                    self.show_selection(key, hl, desc, icon)
+                    self.select_entry(key, hl, desc, icon)
                 ],
             )
             headline_label.bind(
                 "<Button-1>",
                 lambda e, key=key, hl=headline, desc=description, icon=self.icons[i]: [
-                    self.show_selection(key, hl, desc, icon)
+                    self.select_entry(key, hl, desc, icon)
                 ],
             )
             desc_label.bind(
                 "<Button-1>",
                 lambda e, key=key, hl=headline, desc=description, icon=self.icons[i]: [
-                    self.show_selection(key, hl, desc, icon)
+                    self.select_entry(key, hl, desc, icon)
                 ],
             )
 
@@ -109,14 +109,14 @@ class MainMenuGUI:
         self.window.geometry("500x500")
         self.window.resizable(width=False, height=False)
 
-        image_path = "assets/icon.ico"
-        self.image = Image.open(image_path)
+        self.image = Image.open("assets/icon.ico")
         self.tk_image = ImageTk.PhotoImage(self.image)
         image_label = Label(self.window, image=self.tk_image)
         image_label.pack(pady=30)
 
         self.data_source_dropdown = Dropdown(self.window, "data source")
         self.tracking_approach_dropdown = Dropdown(self.window, "tracking approach")
+        self.publisher_dropdown = Dropdown(self.window, "publisher")
 
         self.data_source_has_data_label = Label(self.window)
         self.data_source_has_data_label.pack()
@@ -129,6 +129,49 @@ class MainMenuGUI:
 
         self.calibration_callback = None
 
+    # data sources
+
+    def set_data_source_options(self, options):
+        self.data_source_dropdown.set_menu_data(options)
+
+    def set_current_data_source(self, data_source):
+        self.data_source_dropdown.set_current_selection(data_source)
+
+    def on_data_source_change_requested(self, func):
+        self.data_source_dropdown.on_selection_changed(func)
+
+    # tracking approaches
+
+    def set_tracking_approach_options(self, options):
+        self.tracking_approach_dropdown.set_menu_data(options)
+
+    def set_current_tracking_approach(self, tracking_approach):
+        self.tracking_approach_dropdown.set_current_selection(tracking_approach)
+
+    def on_tracking_approach_change_requested(self, func):
+        self.tracking_approach_dropdown.on_selection_changed(func)
+
+    # publishers
+
+    def set_publisher_options(self, options):
+        self.publisher_dropdown.set_menu_data(options)
+
+    def set_current_publisher(self, publisher):
+        self.publisher_dropdown.set_current_selection(publisher)
+
+    def on_publisher_change_requested(self, func):
+        self.publisher_dropdown.on_selection_changed(func)
+
+    # the rest
+
+    def set_has_calibration_result(self, has_result):
+        self.calibration_results_label.config(text="is configured" if has_result else "is not yet configured")
+
+    def set_data_source_has_data(self, data_source_has_data):
+        self.data_source_has_data_label.config(
+            text="data source has data" if data_source_has_data else "data source has no data."
+        )
+
     def _start_calibration(self):
         calibration_gui = CalibrationGUI(self.window)
         if self.calibration_callback is not None:
@@ -136,32 +179,6 @@ class MainMenuGUI:
 
     def mainloop(self):
         self.window.mainloop()
-
-    def set_data_source_options(self, options):
-        self.data_source_dropdown.set_menu_data(options)
-
-    def set_tracking_approach_options(self, options):
-        self.tracking_approach_dropdown.set_menu_data(options)
-
-    def set_has_calibration_result(self, has_result):
-        self.calibration_results_label.config(text="is configured" if has_result else "is not yet configured")
-
-    def set_current_data_source(self, data_source):
-        self.data_source_dropdown.set_current_selection(data_source)
-
-    def set_current_tracking_approach(self, tracking_approach):
-        self.tracking_approach_dropdown.set_current_selection(tracking_approach)
-
-    def set_data_source_has_data(self, data_source_has_data):
-        self.data_source_has_data_label.config(
-            text="data source has data" if data_source_has_data else "data source has no data."
-        )
-
-    def on_data_source_change_requested(self, func):
-        self.data_source_dropdown.on_selection_changed(func)
-
-    def on_tracking_approach_change_requested(self, func):
-        self.tracking_approach_dropdown.on_selection_changed(func)
 
     def on_calibration_requested(self, func):
         self.calibration_callback = func

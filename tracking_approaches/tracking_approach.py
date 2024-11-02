@@ -29,6 +29,11 @@ class TrackingApproach(ABC):
         pass
 
     @abstractmethod
+    def is_calibrated(self) -> bool:
+        """Returns True if the TrackingApproach has been calibrated."""
+        pass
+
+    @abstractmethod
     def get_next_mouse_movement(self, vector: Vector) -> Optional[MouseMovement]:
         """Based on a vector, a MouseMovement might be translated. For example, when looking at
         a certain position, the mouse shall move to a certain position on the screen."""

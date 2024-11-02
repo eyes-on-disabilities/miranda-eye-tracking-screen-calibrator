@@ -35,6 +35,9 @@ class DPadTrackingApproach(TrackingApproach):
     Look at the corners of the d-pad moves the mouse cursor.
     Looking outside the d-pad and at the center of the d-pad stops the mouse movement."""
 
+    def __init__(self):
+        self.transformation_matrix = None
+
     def get_calibration_instructions(self) -> List[CalibrationInstruction]:
         return [
             CalibrationInstruction((-1, 1), "d-pad: top left"),
@@ -47,6 +50,9 @@ class DPadTrackingApproach(TrackingApproach):
         self.transformation_matrix = compute_perspective_transformation_matrix(
             calibration_result.vectors, [(-1, 1), (1, 1), (1, -1), (-1, -1)]
         )
+
+    def is_calibrated(self) -> bool:
+        return self.transformation_matrix is not None
 
     def get_next_mouse_movement(self, vector: Vector) -> Optional[MouseMovement]:
         new_vector = perspective_transform(self.transformation_matrix, vector)

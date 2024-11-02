@@ -1,5 +1,7 @@
 import argparse
+import time
 from datetime import datetime, timedelta
+from threading import Thread
 from typing import Callable, Iterator, List
 
 import numpy as np
@@ -44,98 +46,107 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-selected_data_source = args.data_source
-selected_tracking_approach = args.tracking_approach
-selected_publisher = args.publisher
+running = True
 
-data_source = data_sources[selected_data_source]["class"]()
-tracking_approach = tracking_approaches[selected_tracking_approach]["class"]()
-publisher = publishers[selected_publisher]()
-# gui = guis[args.gui]()
+selected_data_source = None
+selected_tracking_approach = None
+selected_publisher = None
 
-main_menu = MainMenuGUI()
-data_source.start()
-publisher.start()
+data_source = None
+tracking_approach = None
+publisher = None
 
-gui = None
+calibration_result = None
+
+main_menu_gui = None
+calibration_gui = None
+
+request_loop_thread = None
+last_data_source_vector = None
+monitor = screeninfo.get_monitors()[0]
+last_mouse_position = [monitor.width / 2, monitor.height / 2]
+mouse_speed = 10
 
 
-def reload_data_source(new_data_source):
-    global selected_data_source, data_source, has_calibration_result
-    selected_data_source = new_data_source
+def reload_data_source(data_source_key):
+    global selected_data_source, data_source
+    selected_data_source = data_source_key
     if data_source is not None:
         data_source.stop()
     data_source = data_sources[selected_data_source]["class"]()
     data_source.start()
 
-    has_calibration_result = calibration.has_result(selected_data_source, selected_tracking_approach)
-    main_menu.set_has_calibration_result(has_calibration_result)
-    if has_calibration_result:
-        current_calibration_result = calibration.load_result(selected_data_source, selected_tracking_approach)
-        tracking_approach.calibrate(current_calibration_result)
 
-
-def reload_tracking_approach(new_tracking_approach):
-    global selected_tracking_approach, tracking_approach, has_calibration_result
-    selected_tracking_approach = new_tracking_approach
+def reload_tracking_approach(tracking_approach_key):
+    global selected_tracking_approach, tracking_approach
+    selected_tracking_approach = tracking_approach_key
     tracking_approach = tracking_approaches[selected_tracking_approach]["class"]()
 
-    has_calibration_result = calibration.has_result(selected_data_source, selected_tracking_approach)
-    main_menu.set_has_calibration_result(has_calibration_result)
-    if has_calibration_result:
-        current_calibration_result = calibration.load_result(selected_data_source, selected_tracking_approach)
-        tracking_approach.calibrate(current_calibration_result)
+
+def reload_publisher(publisher_key):
+    global selected_publisher, publisher
+    selected_publisher = publisher_key
+    if publisher is not None:
+        publisher.stop()
+    publisher = publishers[selected_publisher]["class"]()
+    publisher.start()
 
 
-def on_calibration_requested(calibration_gui):
-    global gui
-    gui = calibration_gui
-    execute_calibrations(iter(tracking_approach.get_calibration_instructions()), show_mouse)
+def reload_calibration_result():
+    global selected_data_source, selected_tracking_approach, tracking_approach, calibration_result, main_menu_gui
+    calibration_result = None
+    if calibration.has_result(selected_data_source, selected_tracking_approach):
+        calibration_result = calibration.load_result(selected_data_source, selected_tracking_approach)
+        tracking_approach.calibrate(calibration_result)
+    main_menu_gui.set_has_calibration_result(calibration_result is not None)
 
 
-main_menu.set_data_source_options(data_sources)
-main_menu.set_tracking_approach_options(tracking_approaches)
-main_menu.set_current_data_source(selected_data_source)
-main_menu.set_current_tracking_approach(selected_tracking_approach)
-main_menu.on_data_source_change_requested(reload_data_source)
-main_menu.on_tracking_approach_change_requested(reload_tracking_approach)
-
-main_menu.on_calibration_requested(on_calibration_requested)
-
-has_calibration_result = calibration.has_result(selected_data_source, selected_tracking_approach)
-main_menu.set_has_calibration_result(has_calibration_result)
-if has_calibration_result:
-    current_calibration_result = calibration.load_result(selected_data_source, selected_tracking_approach)
-    tracking_approach.calibrate(current_calibration_result)
-
-
-monitor = screeninfo.get_monitors()[0]
-screen = (monitor.width, monitor.height)
-
-mouse_position = [screen[0] / 2, screen[1] / 2]
-multi = 10
+def loop():
+    global last_data_source_vector, last_mouse_position
+    while running:
+        last_data_source_vector = data_source.get_next_vector()
+        if main_menu_gui is not None:
+            main_menu_gui.set_data_source_has_data(last_data_source_vector is not None)
+        if last_data_source_vector is not None and tracking_approach.is_calibrated():
+            mouse_movement = tracking_approach.get_next_mouse_movement(last_data_source_vector)
+            if mouse_movement is not None:
+                last_mouse_position = get_new_mouse_position(mouse_movement, last_mouse_position)
+                if calibration_gui is not None:
+                    calibration_gui.set_mouse_point(last_mouse_position)
+                publisher.push(last_mouse_position)
+        time.sleep(0.5)
 
 
-def scale_to_screen(vector):
-    return ((vector[0] + 1) * 0.5 * screen[0], (vector[1] - 1) * 0.5 * -screen[1])
+def on_calibration_requested(new_calibration_gui):
+    global calibration_gui
+    calibration_gui = new_calibration_gui
+    execute_calibrations(
+        iter(tracking_approach.get_calibration_instructions()),
+        lambda: calibration_gui.set_main_text("Calibration Done. Press <ESC> or <CTRL-c> or close this window."),
+    )
 
 
-def update_mouse_position(mouse_movement):
-    global mouse_position
+def scale_vector_to_screen(vector):
+    return ((vector[0] + 1) * 0.5 * monitor.width, (vector[1] - 1) * 0.5 * -monitor.height)
 
+
+def get_new_mouse_position(mouse_movement, last_mouse_position):
     if mouse_movement.type == MouseMovementType.TO_POSITION:
-        mouse_position = scale_to_screen(mouse_movement.vector)
+        new_mouse_position = scale_vector_to_screen(mouse_movement.vector)
     if mouse_movement.type == MouseMovementType.BY:
-        mouse_position[0] += mouse_movement.vector[0] * multi
-        mouse_position[1] -= mouse_movement.vector[1] * multi
-        if mouse_position[0] < 0:
-            mouse_position[0] = 0
-        if mouse_position[0] > screen[0]:
-            mouse_position[0] = screen[0]
-        if mouse_position[1] < 0:
-            mouse_position[1] = 0
-        if mouse_position[1] > screen[1]:
-            mouse_position[1] = screen[1]
+        new_mouse_position = [
+            last_mouse_position[0] + mouse_movement.vector[0] * mouse_speed,
+            last_mouse_position[1] - mouse_movement.vector[1] * mouse_speed,
+        ]
+        if new_mouse_position[0] < 0:
+            new_mouse_position[0] = 0
+        if new_mouse_position[0] > monitor.width:
+            new_mouse_position[0] = monitor.width
+        if new_mouse_position[1] < 0:
+            new_mouse_position[1] = 0
+        if new_mouse_position[1] > monitor.height:
+            new_mouse_position[1] = monitor.height
+    return new_mouse_position
 
 
 def execute_calibrations(
@@ -143,17 +154,15 @@ def execute_calibrations(
     on_finish: Callable,
     collected_vectors: List[Vector] = [],
 ):
-    global args, tracking_approach
     next_instruction = next(calibration_instructions, None)
     if next_instruction is None:
-        gui.unset_calibration_point()
-        gui.unset_main_text()
-        gui.unset_image()
+        calibration_gui.unset_calibration_point()
+        calibration_gui.unset_main_text()
+        calibration_gui.unset_image()
         result = CalibrationResult(collected_vectors)
         calibration.delete_result(selected_data_source, selected_tracking_approach)
         calibration.save_result(selected_data_source, selected_tracking_approach, result)
-        tracking_approach.calibrate(result)
-        main_menu.set_has_calibration_result(True)
+        reload_calibration_result()
         on_finish()
     else:
         execute_calibration(
@@ -163,23 +172,23 @@ def execute_calibrations(
 
 
 def execute_calibration(calibration_instruction: CalibrationInstruction, on_finish: Callable[[Vector], None]):
-    gui.unset_calibration_point()
-    gui.unset_main_text()
-    gui.unset_image()
+    calibration_gui.unset_calibration_point()
+    calibration_gui.unset_main_text()
+    calibration_gui.unset_image()
 
     vector = calibration_instruction.vector
     text = calibration_instruction.text
     image = calibration_instruction.image
 
     if vector is not None:
-        gui.set_calibration_point(scale_to_screen(vector))
+        calibration_gui.set_calibration_point(scale_vector_to_screen(vector))
     if text is not None:
-        gui.set_main_text(text)
+        calibration_gui.set_main_text(text)
     if image is not None:
-        gui.set_image(image)
+        calibration_gui.set_image(image)
 
     end_time = datetime.now() + timedelta(seconds=5)
-    gui.after(2000, collect_calibration_vectors, calibration_instruction, on_finish, end_time)
+    calibration_gui.after(2000, collect_calibration_vectors, calibration_instruction, on_finish, end_time)
 
 
 def collect_calibration_vectors(
@@ -195,37 +204,53 @@ def collect_calibration_vectors(
     if now > end_time:
         on_finish(np.mean(np.array(vectors), axis=0) if len(vectors) > 0 else (0, 0))
     else:
-        next_vector = data_source.get_next_vector()
-        if next_vector is not None:
-            vectors.append(next_vector)
+        if last_data_source_vector is not None:
+            vectors.append(last_data_source_vector)
 
         vector = calibration_instruction.vector
         text = calibration_instruction.text
         remaining_seconds = int((end_time - now).total_seconds())
 
         if vector is not None:
-            gui.set_calibration_point(scale_to_screen(vector), str(remaining_seconds))
+            calibration_gui.set_calibration_point(scale_vector_to_screen(vector), str(remaining_seconds))
         elif text is not None:
-            gui.set_main_text(text + f" ... {remaining_seconds}")
+            calibration_gui.set_main_text(text + f" ... {remaining_seconds}")
         else:
-            gui.set_main_text(str(remaining_seconds))
+            calibration_gui.set_main_text(str(remaining_seconds))
 
-        gui.after(100, collect_calibration_vectors, calibration_instruction, on_finish, end_time, vectors)
-
-
-def show_mouse(entered_first_time=True):
-    if entered_first_time:
-        gui.set_main_text("Calibration Done. Press <ESC> or <CTRL-c> or close this window.")
-    next_vector = data_source.get_next_vector()
-    if next_vector is not None:
-        mouse_movement = tracking_approach.get_next_mouse_movement(next_vector)
-        if mouse_movement is not None:
-            update_mouse_position(mouse_movement)
-            gui.set_mouse_point(mouse_position)
-            publisher.push(mouse_position)
-    gui.after(50, show_mouse, False)
+        calibration_gui.after(100, collect_calibration_vectors, calibration_instruction, on_finish, end_time, vectors)
 
 
-main_menu.mainloop()
+main_menu_gui = MainMenuGUI()
+
+reload_data_source(args.data_source)
+reload_tracking_approach(args.tracking_approach)
+reload_publisher(args.publisher)
+reload_calibration_result()
+
+main_menu_gui.set_data_source_options(data_sources)
+main_menu_gui.set_current_data_source(selected_data_source)
+main_menu_gui.on_data_source_change_requested(
+    lambda new_data_source: (reload_data_source(new_data_source), reload_calibration_result())
+)
+
+main_menu_gui.set_tracking_approach_options(tracking_approaches)
+main_menu_gui.set_current_tracking_approach(selected_tracking_approach)
+main_menu_gui.on_tracking_approach_change_requested(
+    lambda new_tracking_approach: (reload_tracking_approach(new_tracking_approach), reload_calibration_result())
+)
+
+main_menu_gui.set_publisher_options(publishers)
+main_menu_gui.set_current_publisher(selected_publisher)
+main_menu_gui.on_publisher_change_requested(reload_publisher)
+
+main_menu_gui.on_calibration_requested(on_calibration_requested)
+
+request_loop = Thread(target=loop)
+request_loop.start()
+
+main_menu_gui.mainloop()
+running = False
+request_loop.join()
 data_source.stop()
 publisher.stop()

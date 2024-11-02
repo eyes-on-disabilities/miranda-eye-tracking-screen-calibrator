@@ -34,6 +34,9 @@ class GazeOnScreenTrackingApproach(TrackingApproach):
     """The most classical TrackingApproach:
     Directly translate the user's gaze onto the screen."""
 
+    def __init__(self):
+        self.transformation_matrix = None
+
     def get_calibration_instructions(self) -> List[CalibrationInstruction]:
         return [
             CalibrationInstruction((-1, 1), "top left", "assets/test_image.png"),
@@ -46,6 +49,9 @@ class GazeOnScreenTrackingApproach(TrackingApproach):
         self.transformation_matrix = compute_perspective_transformation_matrix(
             calibration_result.vectors, [instruction.vector for instruction in self.get_calibration_instructions()]
         )
+
+    def is_calibrated(self) -> bool:
+        return self.transformation_matrix is not None
 
     def get_next_mouse_movement(self, vector: Vector) -> Optional[MouseMovement]:
         new_vector = perspective_transform(self.transformation_matrix, vector)

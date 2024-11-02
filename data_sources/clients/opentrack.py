@@ -28,6 +28,7 @@ class Opentrack:
 
     def start(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.settimeout(5)
         self.socket.bind((self.ip, self.port))
         self.socket.settimeout(self.socket_timeout)
         self.buffer_size = 6 * 8  # Size of one message
@@ -42,5 +43,6 @@ class Opentrack:
             if len(data) == self.buffer_size:
                 new_values = struct.unpack("6d", data)
                 self.update_last_position(new_values)
+        except socket.timeout:
         finally:
             return self.last_position
