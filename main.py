@@ -124,7 +124,7 @@ def loop():
 
 
 def unset_calibration_gui():
-    global calibration_gui
+    global calibration_gui, in_calibration
     calibration_gui = None
     in_calibration = False
 
