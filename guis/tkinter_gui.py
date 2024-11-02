@@ -1,4 +1,5 @@
 import platform
+import screeninfo
 from tkinter import Button, Canvas, Frame, Label, PhotoImage, Tk, Toplevel
 from typing import Callable
 
@@ -118,10 +119,10 @@ class MainMenuGUI:
             icon_photo = ImageTk.PhotoImage(icon_image)
             self.window.iconphoto(False, icon_photo)
 
-        self.image = Image.open("assets/icon.png")
+        self.image = Image.open("assets/icon.png").resize((64, 64))
         self.tk_image = ImageTk.PhotoImage(self.image)
         image_label = Label(self.window, image=self.tk_image)
-        image_label.pack(pady=30)
+        image_label.pack(pady=20)
 
         self.data_source_dropdown = Dropdown(self.window, "data source")
         self.tracking_approach_dropdown = Dropdown(self.window, "tracking approach")
@@ -136,7 +137,27 @@ class MainMenuGUI:
         self.calibration_button = Button(self.window, text="calibrate", command=self._start_calibration)
         self.calibration_button.pack()
 
+        monitor = screeninfo.get_monitors()[0]
+        preview_width = 300
+        self.preview_scale = preview_width / monitor.width
+        preview_height = self.preview_scale * monitor.height
+        self.preview_canvas = Canvas(self.window, background="grey", width=preview_width, height=preview_height)
+        self.preview_canvas.pack()
+
         self.calibration_callback = None
+
+    def set_mouse_point(self, vector: Vector):
+        self.unset_mouse_point()
+        if vector is not None:
+            radius = 3
+            x = vector[0] * self.preview_scale
+            y = vector[1] * self.preview_scale
+            self.preview_canvas.create_oval(
+                x - radius, y - radius, x + radius, y + radius, fill="white", tag="preview_mouse_point"
+            )
+
+    def unset_mouse_point(self):
+        self.preview_canvas.delete("preview_mouse_point")
 
     # data sources
 

@@ -60,6 +60,7 @@ calibration_result = None
 
 main_menu_gui = None
 calibration_gui = None
+in_calibration = False
 
 request_loop_thread = None
 last_data_source_vector = None
@@ -105,6 +106,7 @@ def loop():
     global last_data_source_vector, last_mouse_position
     while running:
         try:
+            main_menu_gui.unset_mouse_point()
             last_data_source_vector = data_source.get_next_vector()
             if main_menu_gui is not None:
                 main_menu_gui.set_data_source_has_data(last_data_source_vector is not None)
@@ -112,7 +114,8 @@ def loop():
                 mouse_movement = tracking_approach.get_next_mouse_movement(last_data_source_vector)
                 if mouse_movement is not None:
                     last_mouse_position = get_new_mouse_position(mouse_movement, last_mouse_position)
-                    if calibration_gui is not None:
+                    main_menu_gui.set_mouse_point(last_mouse_position)
+                    if calibration_gui is not None and not in_calibration:
                         calibration_gui.set_mouse_point(last_mouse_position)
                     publisher.push(last_mouse_position)
         except Exception as e:
@@ -123,16 +126,21 @@ def loop():
 def unset_calibration_gui():
     global calibration_gui
     calibration_gui = None
+    in_calibration = False
+
+
+def calibration_done():
+    global in_calibration
+    in_calibration = False
+    calibration_gui.set_main_text("Calibration Done. Press <ESC> or <CTRL-c> or close this window.")
 
 
 def on_calibration_requested(new_calibration_gui):
-    global calibration_gui
+    global calibration_gui, in_calibration
     calibration_gui = new_calibration_gui
     calibration_gui.on_close(unset_calibration_gui)
-    execute_calibrations(
-        iter(tracking_approach.get_calibration_instructions()),
-        lambda: calibration_gui.set_main_text("Calibration Done. Press <ESC> or <CTRL-c> or close this window."),
-    )
+    in_calibration = True
+    execute_calibrations(iter(tracking_approach.get_calibration_instructions()), calibration_done)
 
 
 def scale_vector_to_screen(vector):

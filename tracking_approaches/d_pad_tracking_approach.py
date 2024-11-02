@@ -61,4 +61,4 @@ class DPadTrackingApproach(TrackingApproach):
             if not ((-0.25 <= new_vector[0] <= 0.25) and (0.25 >= new_vector[1] >= -0.25)):
                 return MouseMovement(MouseMovementType.BY, new_vector)
 
-        return None
+        return MouseMovement(MouseMovementType.BY, (0,0))
