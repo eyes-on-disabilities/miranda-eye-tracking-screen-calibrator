@@ -1,25 +1,62 @@
 import platform
-import screeninfo
-from tkinter import Button, Canvas, Frame, Label, PhotoImage, Tk, Toplevel
+from tkinter import Canvas, PhotoImage, Tk, Toplevel
+from tkinter.ttk import Button, Frame, Label, Style
 from typing import Callable
 
+import screeninfo
 from PIL import Image, ImageTk
 
 from guis.gui import GUI
 from misc import Vector
 
+COLORS = {
+        "bg": "#333",
+        "text": "#fff",
+        "button_bg": "#555",
+        "button_bg_hover": "#777",
+        "button_text": "#ffffff",
+        "canvas_bg": "#555",
+        "label_bg": "#333",
+        "label_text": "#fff",
+        "dropdown_bg": "#555",
+        "dropdown_item_bg": "#555",
+        "dropdown_item_bg_hover": "#777",
+        "dropdown_item_text": "#fff",
+}
+
+
+def apply_theme(root):
+    style = Style()
+    style.theme_use("clam")
+
+    # background
+    root.config(bg=COLORS["bg"])
+    # general
+    style.configure("TFrame", background=COLORS["bg"])
+    style.configure(
+        "TButton", background=COLORS["button_bg"], foreground=COLORS["button_text"], borderwidth=0, padding=15
+    )
+    style.map("TButton", background=[("active", COLORS["button_bg_hover"])])
+    style.configure("TLabel", background=COLORS["label_bg"], foreground=COLORS["label_text"])
+    # dropdown
+    style.configure("Dropdown.TFrame", bordercolor=COLORS["bg"], background=COLORS["dropdown_bg"])
+    style.configure("DropdownItem.TFrame", background=COLORS["dropdown_item_bg"])
+    style.map("DropdownItem.TFrame", background=[("hover", COLORS["dropdown_item_bg_hover"])])
+    style.configure("DropdownItem.TLabel", background=COLORS["dropdown_item_bg"])
+    style.map("DropdownItem.TLabel", background=[("hover", COLORS["dropdown_item_bg_hover"])])
+
 
 class Dropdown:
-    def __init__(self, root, initial_text=""):
+    def __init__(self, root, initial_text="", **pack_args):
         self.root = root
         self.menu_data = []
         self.icons = []
         self.selection_callback = None
 
         self.dropdown_button = Button(self.root, text=initial_text, compound="left", command=self.toggle_dropdown)
-        self.dropdown_button.pack()
+        self.dropdown_button.pack(**pack_args)
 
-        self.dropdown_frame = Frame(self.root, borderwidth=1, relief="solid")
+        self.dropdown_frame = Frame(self.root, borderwidth=4, relief="solid", style="Dropdown.TFrame")
         self.dropdown_frame.place_forget()  # Hide initially
 
     def set_menu_data(self, menu_data):
@@ -28,7 +65,7 @@ class Dropdown:
 
         # Load icons for each menu item, to keep them in memory
         for entry in menu_data:
-            image = Image.open(menu_data[entry]["icon"]).resize((16, 16))
+            image = Image.open(menu_data[entry]["icon"]).resize((24, 24))
             icon = ImageTk.PhotoImage(image)
             self.icons.append(icon)
 
@@ -64,6 +101,14 @@ class Dropdown:
             self.dropdown_frame.lift()
             self.populate_dropdown()
 
+    def apply_hover_state(self, widgets):
+        for w in widgets:
+            w.state(["hover"])
+
+    def remove_hover_state(self, widgets):
+        for w in widgets:
+            w.state(["!hover"])
+
     def populate_dropdown(self):
         # Clear any existing widgets
         for widget in self.dropdown_frame.winfo_children():
@@ -74,30 +119,37 @@ class Dropdown:
             headline = self.menu_data[entry]["title"]
             description = self.menu_data[entry]["description"]
 
-            item_frame = Frame(self.dropdown_frame)
+            item_frame = Frame(self.dropdown_frame, style="DropdownItem.TFrame")
             item_frame.pack(fill="x", padx=5, pady=5)
 
-            headline_label = Label(item_frame, text=headline, image=self.icons[i], compound="left", anchor="w")
+            headline_label = Label(
+                item_frame, text=headline, image=self.icons[i], compound="left", anchor="w", style="DropdownItem.TLabel"
+            )
             headline_label.pack(anchor="w")
 
-            desc_label = Label(item_frame, text=description, anchor="w", fg="grey", justify="left")
-            desc_label.pack(anchor="w", padx=20)
+            desc_label = Label(item_frame, text=description, anchor="w", justify="left", style="DropdownItem.TLabel")
+            desc_label.pack(anchor="w")
+
+            widges = [item_frame, headline_label, desc_label]
+            for w in widges:
+                w.bind("<Enter>", lambda _, ws=widges: [w.state(["hover"]) for w in ws])
+                w.bind("<Leave>", lambda _, ws=widges: [w.state(["!hover"]) for w in ws])
 
             item_frame.bind(
                 "<Button-1>",
-                lambda e, key=key, hl=headline, desc=description, icon=self.icons[i]: [
+                lambda _, key=key, hl=headline, desc=description, icon=self.icons[i]: [
                     self.select_entry(key, hl, desc, icon)
                 ],
             )
             headline_label.bind(
                 "<Button-1>",
-                lambda e, key=key, hl=headline, desc=description, icon=self.icons[i]: [
+                lambda _, key=key, hl=headline, desc=description, icon=self.icons[i]: [
                     self.select_entry(key, hl, desc, icon)
                 ],
             )
             desc_label.bind(
                 "<Button-1>",
-                lambda e, key=key, hl=headline, desc=description, icon=self.icons[i]: [
+                lambda _, key=key, hl=headline, desc=description, icon=self.icons[i]: [
                     self.select_entry(key, hl, desc, icon)
                 ],
             )
@@ -108,8 +160,10 @@ class MainMenuGUI:
     def __init__(self):
         self.window = Tk()
         self.window.title("Miranda Eye Track")
-        self.window.geometry("500x500")
+        self.window.geometry("500x700")
         self.window.resizable(width=False, height=False)
+
+        apply_theme(self.window)
 
         os_name = platform.system()
         if os_name == "Windows":
@@ -119,14 +173,20 @@ class MainMenuGUI:
             icon_photo = ImageTk.PhotoImage(icon_image)
             self.window.iconphoto(False, icon_photo)
 
-        self.image = Image.open("assets/icon.png").resize((64, 64))
-        self.tk_image = ImageTk.PhotoImage(self.image)
-        image_label = Label(self.window, image=self.tk_image)
+        self.window.grid_columnconfigure(0, weight=1)
+        self.window.grid_columnconfigure(1, weight=1)
+
+        image = Image.open("assets/icon.png").resize((64, 64))
+        self.tk_image = ImageTk.PhotoImage(image)  # 'self' to keep it in memory
+        image_label = Label(self.window, image=self.tk_image, style="Image.TLabel")
         image_label.pack(pady=20)
 
-        self.data_source_dropdown = Dropdown(self.window, "data source")
-        self.tracking_approach_dropdown = Dropdown(self.window, "tracking approach")
-        self.publisher_dropdown = Dropdown(self.window, "publisher")
+        Label(self.window, text="data source").pack()
+        self.data_source_dropdown = Dropdown(self.window, "data source", pady=3)
+        Label(self.window, text="tracking approach").pack()
+        self.tracking_approach_dropdown = Dropdown(self.window, "tracking approach", pady=3)
+        Label(self.window, text="publisher").pack()
+        self.publisher_dropdown = Dropdown(self.window, "publisher", pady=3)
 
         self.data_source_has_data_label = Label(self.window)
         self.data_source_has_data_label.pack()
@@ -135,14 +195,27 @@ class MainMenuGUI:
         self.calibration_results_label.pack()
 
         self.calibration_button = Button(self.window, text="calibrate", command=self._start_calibration)
-        self.calibration_button.pack()
+        self.calibration_button.pack(pady=3)
 
         monitor = screeninfo.get_monitors()[0]
         preview_width = 300
         self.preview_scale = preview_width / monitor.width
         preview_height = self.preview_scale * monitor.height
-        self.preview_canvas = Canvas(self.window, background="grey", width=preview_width, height=preview_height)
-        self.preview_canvas.pack()
+        self.preview_canvas = Canvas(
+            self.window,
+            background=COLORS["canvas_bg"],
+            width=preview_width,
+            height=preview_height,
+            highlightthickness=0,
+        )
+        self.preview_canvas.pack(pady=12)
+        self.preview_canvas.create_text(
+            preview_width // 2,
+            preview_height // 2,
+            text="Preview",
+            font=("default", 24),
+            fill=COLORS["bg"]
+        )
 
         self.calibration_callback = None
 
@@ -153,7 +226,7 @@ class MainMenuGUI:
             x = vector[0] * self.preview_scale
             y = vector[1] * self.preview_scale
             self.preview_canvas.create_oval(
-                x - radius, y - radius, x + radius, y + radius, fill="white", tag="preview_mouse_point"
+                x - radius, y - radius, x + radius, y + radius, fill="white", tag="preview_mouse_point", outline=""
             )
 
     def unset_mouse_point(self):
@@ -240,7 +313,7 @@ class CalibrationGUI:
         self.screen_height = self.window.winfo_screenheight()
 
         self.canvas = Canvas(
-            self.window, background="darkblue", width=self.screen_width, height=self.screen_height, highlightthickness=0
+            self.window, background=COLORS["bg"], width=self.screen_width, height=self.screen_height, highlightthickness=0
         )
         self.canvas.pack()
 
@@ -339,7 +412,6 @@ class TkinterGUI(GUI):
         self.screen_height = self.root.winfo_screenheight()
         self.screen = (self.screen_width, self.screen_height)
 
-        # highlightthickness removes the border
         self.canvas = Canvas(
             self.root, background="darkblue", width=self.screen_width, height=self.screen_height, highlightthickness=0
         )
