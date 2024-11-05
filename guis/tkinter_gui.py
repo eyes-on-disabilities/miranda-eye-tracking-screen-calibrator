@@ -1,4 +1,5 @@
 import platform
+import tkinter
 from tkinter import Canvas, PhotoImage, Tk, Toplevel
 from tkinter.ttk import Button, Frame, Label, Style
 from typing import Callable
@@ -10,18 +11,18 @@ from guis.gui import GUI
 from misc import Vector
 
 COLORS = {
-        "bg": "#333",
-        "text": "#fff",
-        "button_bg": "#555",
-        "button_bg_hover": "#777",
-        "button_text": "#ffffff",
-        "canvas_bg": "#555",
-        "label_bg": "#333",
-        "label_text": "#fff",
-        "dropdown_bg": "#555",
-        "dropdown_item_bg": "#555",
-        "dropdown_item_bg_hover": "#777",
-        "dropdown_item_text": "#fff",
+    "bg": "#333",
+    "text": "#fff",
+    "button_bg": "#555",
+    "button_bg_hover": "#777",
+    "button_text": "#ffffff",
+    "canvas_bg": "#555",
+    "label_bg": "#333",
+    "label_text": "#fff",
+    "dropdown_bg": "#555",
+    "dropdown_item_bg": "#555",
+    "dropdown_item_bg_hover": "#777",
+    "dropdown_item_text": "#fff",
 }
 
 
@@ -44,20 +45,41 @@ def apply_theme(root):
     style.map("DropdownItem.TFrame", background=[("hover", COLORS["dropdown_item_bg_hover"])])
     style.configure("DropdownItem.TLabel", background=COLORS["dropdown_item_bg"])
     style.map("DropdownItem.TLabel", background=[("hover", COLORS["dropdown_item_bg_hover"])])
+    style.configure("Special.TFrame", background=COLORS["dropdown_item_bg"])
 
 
 class Dropdown:
-    def __init__(self, root, initial_text="", **pack_args):
-        self.root = root
+
+    def find_root_widget(self):
+        current = self.widget
+        while current.master is not None:
+            current = current.master
+        return current
+
+    def get_button_position_based_on_root_widget(self):
+        x = self.dropdown_button.winfo_x()
+        y = self.dropdown_button.winfo_y()
+        current_widget = self.widget
+        while current_widget.master is not None:
+            x += current_widget.winfo_x()
+            y += current_widget.winfo_y()
+            current_widget = current_widget.master
+        return x, y
+
+    def __init__(self, widget, initial_text=""):
+        self.initial_text = initial_text
+        self.widget = widget
         self.menu_data = []
         self.icons = []
         self.selection_callback = None
 
-        self.dropdown_button = Button(self.root, text=initial_text, compound="left", command=self.toggle_dropdown)
-        self.dropdown_button.pack(**pack_args)
+        self.dropdown_button = Button(self.widget, text=initial_text, compound="left", command=self.toggle_dropdown)
 
-        self.dropdown_frame = Frame(self.root, borderwidth=4, relief="solid", style="Dropdown.TFrame")
-        self.dropdown_frame.place_forget()  # Hide initially
+        self.dropdown_frame = Frame(self.find_root_widget(), borderwidth=4, relief="solid", style="Dropdown.TFrame")
+        self.close_dropdown()
+
+    def grid(self, **grid_args):
+        self.dropdown_button.grid(**grid_args)
 
     def set_menu_data(self, menu_data):
         self.menu_data = menu_data
@@ -90,16 +112,31 @@ class Dropdown:
         if trigger_callback and self.selection_callback:
             self.selection_callback(key)
 
-    def toggle_dropdown(self):
-        if self.dropdown_frame.winfo_ismapped():  # If visible, hide it
+    def close_dropdown(self):
+        if self.dropdown_frame.winfo_ismapped():
             self.dropdown_frame.place_forget()
+
+    def open_dropdown(self):
+        # Position dropdown frame directly below the dropdown button
+        dropdown_button_position = self.get_button_position_based_on_root_widget()
+        self.dropdown_frame.place(
+            x=dropdown_button_position[0], y=dropdown_button_position[1] + self.dropdown_button.winfo_height()
+        )
+        self.dropdown_frame.lift()
+        self.populate_dropdown()
+
+        # to not have a dropdown_frame go outside the window
+        self.widget.update()
+        right_edge_of_dropdown_frame = dropdown_button_position[0] + self.dropdown_frame.winfo_width()
+        window_width = self.find_root_widget().winfo_width()
+        if right_edge_of_dropdown_frame > window_width:
+            self.dropdown_frame.place(x=dropdown_button_position[0] - (right_edge_of_dropdown_frame - window_width))
+
+    def toggle_dropdown(self):
+        if self.dropdown_frame.winfo_ismapped():
+            self.close_dropdown()
         else:
-            # Position dropdown frame directly below the dropdown button
-            self.dropdown_frame.place(
-                x=self.dropdown_button.winfo_x(), y=self.dropdown_button.winfo_y() + self.dropdown_button.winfo_height()
-            )
-            self.dropdown_frame.lift()
-            self.populate_dropdown()
+            self.open_dropdown()
 
     def apply_hover_state(self, widgets):
         for w in widgets:
@@ -160,9 +197,7 @@ class MainMenuGUI:
     def __init__(self):
         self.window = Tk()
         self.window.title("Miranda Eye Track")
-        self.window.geometry("500x700")
-        self.window.resizable(width=False, height=False)
-
+        self.window.geometry("650x450")
         apply_theme(self.window)
 
         os_name = platform.system()
@@ -173,48 +208,72 @@ class MainMenuGUI:
             icon_photo = ImageTk.PhotoImage(icon_image)
             self.window.iconphoto(False, icon_photo)
 
-        self.window.grid_columnconfigure(0, weight=1)
-        self.window.grid_columnconfigure(1, weight=1)
-
         image = Image.open("assets/icon.png").resize((64, 64))
         self.tk_image = ImageTk.PhotoImage(image)  # 'self' to keep it in memory
         image_label = Label(self.window, image=self.tk_image, style="Image.TLabel")
         image_label.pack(pady=20)
 
-        Label(self.window, text="data source").pack()
-        self.data_source_dropdown = Dropdown(self.window, "data source", pady=3)
-        Label(self.window, text="tracking approach").pack()
-        self.tracking_approach_dropdown = Dropdown(self.window, "tracking approach", pady=3)
-        Label(self.window, text="publisher").pack()
-        self.publisher_dropdown = Dropdown(self.window, "publisher", pady=3)
+        dropdowns_frame = Frame(self.window)
+        dropdowns_frame.pack(fill=tkinter.X, padx=10, pady=10, side="top")
+        dropdowns_frame.grid_columnconfigure(0, weight=1)
+        dropdowns_frame.grid_columnconfigure(1, weight=1)
+        dropdowns_frame.grid_columnconfigure(2, weight=1)
 
-        self.data_source_has_data_label = Label(self.window)
-        self.data_source_has_data_label.pack()
+        Label(dropdowns_frame, text="data source").grid(row=0, column=0, sticky="w", pady=3)
+        self.data_source_dropdown = Dropdown(dropdowns_frame, "data source")
+        self.data_source_dropdown.grid(row=1, column=0, sticky="we", padx=3)
 
-        self.calibration_results_label = Label(self.window)
-        self.calibration_results_label.pack()
+        Label(dropdowns_frame, text="tracking approach").grid(row=0, column=1, sticky="w", pady=3)
+        self.tracking_approach_dropdown = Dropdown(dropdowns_frame, "tracking approach")
+        self.tracking_approach_dropdown.grid(row=1, column=1, sticky="we", padx=3)
 
-        self.calibration_button = Button(self.window, text="calibrate", command=self._start_calibration)
-        self.calibration_button.pack(pady=3)
+        Label(dropdowns_frame, text="publisher").grid(row=0, column=2, sticky="w", pady=3)
+        self.publisher_dropdown = Dropdown(dropdowns_frame, "publisher")
+        self.publisher_dropdown.grid(row=1, column=2, sticky="we", padx=3)
+
+        # on window resize close dropdowns
+        self.window.bind(
+            "<Configure>",
+            lambda e: (
+                [
+                    self.data_source_dropdown.close_dropdown(),
+                    self.tracking_approach_dropdown.close_dropdown(),
+                    self.publisher_dropdown.close_dropdown(),
+                ]
+                if e.widget == self.window
+                else None
+            ),
+        )
+
+        left_frame = Frame(self.window)
+        left_frame.pack(side="left", fill=tkinter.BOTH, expand=True, padx=20, pady=20)
+
+        right_frame = Frame(self.window)
+        right_frame.pack(side="right", fill=tkinter.BOTH, expand=True, padx=20, pady=20)
+
+        self.data_source_has_data_label = Label(left_frame)
+        self.data_source_has_data_label.pack(anchor="w")
+
+        self.calibration_results_label = Label(left_frame)
+        self.calibration_results_label.pack(anchor="w")
+
+        self.calibration_button = Button(left_frame, text="re-calibrate", command=self._start_calibration)
+        self.calibration_button.pack(padx=12, pady=12)
 
         monitor = screeninfo.get_monitors()[0]
         preview_width = 300
         self.preview_scale = preview_width / monitor.width
         preview_height = self.preview_scale * monitor.height
         self.preview_canvas = Canvas(
-            self.window,
+            right_frame,
             background=COLORS["canvas_bg"],
             width=preview_width,
             height=preview_height,
             highlightthickness=0,
         )
-        self.preview_canvas.pack(pady=12)
+        self.preview_canvas.pack(side="top", anchor="w")
         self.preview_canvas.create_text(
-            preview_width // 2,
-            preview_height // 2,
-            text="Preview",
-            font=("default", 24),
-            fill=COLORS["bg"]
+            preview_width // 2, preview_height // 2, text="Preview", font=("default", 24), fill=COLORS["bg"]
         )
 
         self.calibration_callback = None
@@ -268,11 +327,21 @@ class MainMenuGUI:
     # the rest
 
     def set_has_calibration_result(self, has_result):
-        self.calibration_results_label.config(text="is configured" if has_result else "is not yet configured")
+        self.calibration_results_label.config(
+            text=(
+                "✅︎ calibrated"
+                if has_result
+                else "❌ not yet calibrated."
+            )
+        )
 
     def set_data_source_has_data(self, data_source_has_data):
         self.data_source_has_data_label.config(
-            text="data source has data" if data_source_has_data else "data source has no data."
+            text=(
+                "✅︎ receive data from data source."
+                if data_source_has_data
+                else "❌ receive no data from data source."
+            )
         )
 
     def _start_calibration(self):
@@ -294,7 +363,7 @@ class CalibrationGUI:
 
     def __init__(self, root_window):
         self.window = Toplevel(root_window)
-        self.window.title("Haha")
+        self.window.title("Miranda Eye Track")
 
         os_name = platform.system()
         if os_name == "Windows":
@@ -313,7 +382,11 @@ class CalibrationGUI:
         self.screen_height = self.window.winfo_screenheight()
 
         self.canvas = Canvas(
-            self.window, background=COLORS["bg"], width=self.screen_width, height=self.screen_height, highlightthickness=0
+            self.window,
+            background=COLORS["bg"],
+            width=self.screen_width,
+            height=self.screen_height,
+            highlightthickness=0,
         )
         self.canvas.pack()
 
