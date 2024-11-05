@@ -10,7 +10,6 @@ import screeninfo
 import calibration
 from calibration import CalibrationInstruction, CalibrationResult
 from data_sources import data_sources
-from guis import guis
 from guis.tkinter_gui import MainMenuGUI
 from misc import Vector
 from mouse_movement import MouseMovementType
@@ -37,12 +36,6 @@ parser.add_argument(
     choices=publishers,
     default=next(iter(publishers)),
 )
-parser.add_argument(
-    "--gui",
-    help='The GUI. default="%(default)s"',
-    choices=guis,
-    default=next(iter(guis)),
-)
 
 args = parser.parse_args()
 
@@ -66,7 +59,7 @@ request_loop_thread = None
 last_data_source_vector = None
 monitor = screeninfo.get_monitors()[0]
 last_mouse_position = [monitor.width / 2, monitor.height / 2]
-mouse_speed = 10
+mouse_speed = 20
 
 
 def reload_data_source(data_source_key):
@@ -94,8 +87,9 @@ def reload_publisher(publisher_key):
 
 
 def reload_calibration_result():
-    global selected_data_source, selected_tracking_approach, tracking_approach, calibration_result, main_menu_gui
+    global selected_data_source, selected_tracking_approach, tracking_approach, calibration_result, main_menu_gui, last_mouse_position
     calibration_result = None
+    last_mouse_position = [monitor.width / 2, monitor.height / 2]
     if calibration.has_result(selected_data_source, selected_tracking_approach):
         calibration_result = calibration.load_result(selected_data_source, selected_tracking_approach)
         tracking_approach.calibrate(calibration_result)
