@@ -12,12 +12,14 @@ class Opentrack:
 
     def update_last_position(self, new_values):
         assert len(new_values) == 6
-        self.last_position["x"] = new_values[0]
-        self.last_position["y"] = new_values[1]
-        self.last_position["z"] = new_values[2]
-        self.last_position["yaw"] = new_values[3]
-        self.last_position["pitch"] = new_values[4]
-        self.last_position["roll"] = new_values[5]
+        self.last_position = {
+            "x": new_values[0],
+            "y": new_values[1],
+            "z": new_values[2],
+            "yaw": new_values[3],
+            "pitch": new_values[4],
+            "roll": new_values[5],
+        }
 
     def start(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -38,5 +40,7 @@ class Opentrack:
                 self.update_last_position(new_values)
             else:
                 self.last_position = None
+        except Exception:
+            self.last_position = None
         finally:
             return self.last_position
