@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from misc import Vector
-from typing import List, Optional
+from typing import Optional
 
-from calibration import CalibrationInstruction, CalibrationResult
+from calibration import CalibrationInstructions, CalibrationResult
 from mouse_movement import MouseMovement
 
 
@@ -18,8 +18,8 @@ class TrackingApproach(ABC):
     """
 
     @abstractmethod
-    def get_calibration_instructions(self) -> List[CalibrationInstruction]:
-        """Gives a list of CalibrationInstructions for guiding a calibration."""
+    def get_calibration_instructions(self) -> CalibrationInstructions:
+        """Gives CalibrationInstructions for guiding a calibration."""
         pass
 
     @abstractmethod

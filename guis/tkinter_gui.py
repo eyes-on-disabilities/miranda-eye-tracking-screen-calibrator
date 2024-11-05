@@ -327,20 +327,12 @@ class MainMenuGUI:
     # the rest
 
     def set_has_calibration_result(self, has_result):
-        self.calibration_results_label.config(
-            text=(
-                "✅︎ calibrated"
-                if has_result
-                else "❌ not yet calibrated."
-            )
-        )
+        self.calibration_results_label.config(text=("✅︎ calibrated" if has_result else "❌ not yet calibrated."))
 
     def set_data_source_has_data(self, data_source_has_data):
         self.data_source_has_data_label.config(
             text=(
-                "✅︎ receive data from data source."
-                if data_source_has_data
-                else "❌ receive no data from data source."
+                "✅︎ receive data from data source." if data_source_has_data else "❌ receive no data from data source."
             )
         )
 
@@ -411,6 +403,7 @@ class CalibrationGUI:
             text=text,
             font=("default", 24),
             tags="main_text",
+            fill="white",
         )
 
     def unset_main_text(self):
@@ -424,6 +417,7 @@ class CalibrationGUI:
             text=text,
             font=("default", 18),
             tags="debug_text",
+            fill="white",
         )
 
     def unset_debug_text(self):
@@ -431,13 +425,33 @@ class CalibrationGUI:
 
     def set_calibration_point(self, vector: Vector, text: str = None):
         self.unset_calibration_point()
-        radius = 30
         x, y = vector
-        self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="red", tag="calibration_point")
+        x_text, y_text = vector
+        target_radius = 30
+        radius = target_radius
+
+        # adjustments of point size and text position on the edges of the screen
+        if x < target_radius:
+            radius = 2 * target_radius
+            x_text = target_radius
+        if x > self.screen_width - target_radius:
+            radius = 2 * target_radius
+            x_text = self.screen_width - target_radius
+        if y < target_radius:
+            radius = 2 * target_radius
+            y_text = target_radius
+        if y > self.screen_height - target_radius:
+            radius = 2 * target_radius
+            y_text = self.screen_height - target_radius
+
+        self.canvas.create_oval(
+            x - radius, y - radius, x + radius, y + radius, fill="white", tag="calibration_point", outline=""
+        )
+
         if text is not None:
             self.canvas.create_text(
-                x,
-                y,
+                x_text,
+                y_text,
                 text=text,
                 font=("default", 18),
                 tags="calibration_point",
@@ -450,7 +464,9 @@ class CalibrationGUI:
         self.unset_mouse_point()
         radius = 5
         x, y = vector
-        self.canvas.create_oval(x - radius, y - radius, x + radius, y + radius, fill="green", tag="mouse_point")
+        self.canvas.create_oval(
+            x - radius, y - radius, x + radius, y + radius, fill="white", tag="mouse_point", outline=""
+        )
 
     def unset_mouse_point(self):
         self.canvas.delete("mouse_point")

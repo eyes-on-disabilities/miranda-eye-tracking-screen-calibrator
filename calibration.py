@@ -17,6 +17,12 @@ class CalibrationInstruction:
         self.image = image
 
 
+class CalibrationInstructions:
+    def __init__(self, preparational_text: str, instructions: list[CalibrationInstruction]):
+        self.preparational_text = preparational_text
+        self.instructions = instructions
+
+
 class CalibrationResult:
     def __init__(self, vectors: List[Vector]):
         self.vectors = vectors

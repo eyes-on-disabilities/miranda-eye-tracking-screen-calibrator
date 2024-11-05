@@ -1,9 +1,10 @@
-from misc import Vector
 from typing import List, Optional
 
 import numpy as np
 
-from calibration import CalibrationInstruction, CalibrationResult
+from calibration import (CalibrationInstruction, CalibrationInstructions,
+                         CalibrationResult)
+from misc import Vector
 from mouse_movement import MouseMovement, MouseMovementType
 from tracking_approaches.tracking_approach import TrackingApproach
 
@@ -37,17 +38,21 @@ class GazeOnScreenTrackingApproach(TrackingApproach):
     def __init__(self):
         self.transformation_matrix = None
 
-    def get_calibration_instructions(self) -> List[CalibrationInstruction]:
-        return [
-            CalibrationInstruction((-1, 1), "top left", "assets/test_image.png"),
-            CalibrationInstruction((1, 1), "top right", "assets/test_image.png"),
-            CalibrationInstruction((1, -1), "bottom left", "assets/test_image.png"),
-            CalibrationInstruction((-1, -1), "bottom right", "assets/test_image.png"),
-        ]
+    def get_calibration_instructions(self) -> CalibrationInstructions:
+        return CalibrationInstructions(
+            "The following instructions will tell to you to look at specific corners of your screen.",
+            [
+                CalibrationInstruction((-1, 1), "look at the TOP LEFT."),
+                CalibrationInstruction((1, 1), "look at the TOP RIGHT."),
+                CalibrationInstruction((1, -1), "look at the BOTTOM RIGHT."),
+                CalibrationInstruction((-1, -1), "look at the BOTTOM LEFT."),
+            ],
+        )
 
     def calibrate(self, calibration_result: CalibrationResult):
         self.transformation_matrix = compute_perspective_transformation_matrix(
-            calibration_result.vectors, [instruction.vector for instruction in self.get_calibration_instructions()]
+            calibration_result.vectors,
+            [instruction.vector for instruction in self.get_calibration_instructions().instructions],
         )
 
     def is_calibrated(self) -> bool:

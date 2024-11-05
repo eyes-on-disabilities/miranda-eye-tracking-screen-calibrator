@@ -140,7 +140,26 @@ def on_calibration_requested(new_calibration_gui):
     calibration_gui = new_calibration_gui
     calibration_gui.on_close(unset_calibration_gui)
     in_calibration = True
-    execute_calibrations(iter(tracking_approach.get_calibration_instructions()), calibration_done)
+
+    calibration_instructions = tracking_approach.get_calibration_instructions()
+    show_preparational_text(
+        calibration_instructions.preparational_text,
+        lambda: execute_calibrations(iter(calibration_instructions.instructions), calibration_done),
+    )
+
+
+def show_preparational_text(preparational_text: str, on_finish: Callable, end_time=None):
+    now = datetime.now()
+    if end_time is None:
+        end_time = now + timedelta(seconds=15)
+
+    if end_time < now:
+        calibration_gui.unset_main_text()
+        on_finish()
+    else:
+        remaining_seconds = int((end_time - now).total_seconds())
+        calibration_gui.set_main_text(preparational_text + f"\nInstructions come in {remaining_seconds}")
+        calibration_gui.after(250, show_preparational_text, preparational_text, on_finish, end_time)
 
 
 def scale_vector_to_screen(vector):

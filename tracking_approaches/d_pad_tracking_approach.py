@@ -1,9 +1,10 @@
-from misc import Vector
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 
-from calibration import CalibrationInstruction, CalibrationResult
+from calibration import (CalibrationInstruction, CalibrationInstructions,
+                         CalibrationResult)
+from misc import Vector
 from mouse_movement import MouseMovement, MouseMovementType
 from tracking_approaches.tracking_approach import TrackingApproach
 
@@ -38,13 +39,16 @@ class DPadTrackingApproach(TrackingApproach):
     def __init__(self):
         self.transformation_matrix = None
 
-    def get_calibration_instructions(self) -> List[CalibrationInstruction]:
-        return [
-            CalibrationInstruction((-1, 1), "d-pad: top left"),
-            CalibrationInstruction((1, 1), "d-pad: top right"),
-            CalibrationInstruction((1, -1), "d-pad: bottom left"),
-            CalibrationInstruction((-1, -1), "d-pad: bottom right"),
-        ]
+    def get_calibration_instructions(self) -> CalibrationInstructions:
+        return CalibrationInstructions(
+            "The following instructions will tell to you to look onto specific corners of your d-pad.",
+            [
+                CalibrationInstruction(text="look at the TOP LEFT corner of your d-pad."),
+                CalibrationInstruction(text="look at the TOP RIGHT corner of your d-pad."),
+                CalibrationInstruction(text="look at the BOTTOM RIGHT corner of your d-pad."),
+                CalibrationInstruction(text="look at the BOTTOM LEFT corner of your d-pad."),
+            ],
+        )
 
     def calibrate(self, calibration_result: CalibrationResult):
         self.transformation_matrix = compute_perspective_transformation_matrix(
@@ -61,4 +65,4 @@ class DPadTrackingApproach(TrackingApproach):
             if not ((-0.25 <= new_vector[0] <= 0.25) and (0.25 >= new_vector[1] >= -0.25)):
                 return MouseMovement(MouseMovementType.BY, new_vector)
 
-        return MouseMovement(MouseMovementType.BY, (0,0))
+        return MouseMovement(MouseMovementType.BY, (0, 0))
