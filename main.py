@@ -1,4 +1,5 @@
 import argparse
+import traceback
 import time
 from datetime import datetime, timedelta
 from threading import Thread
@@ -108,20 +109,29 @@ def loop():
                 mouse_movement = tracking_approach.get_next_mouse_movement(last_data_source_vector)
                 if mouse_movement is not None:
                     last_mouse_position = get_new_mouse_position(mouse_movement, last_mouse_position)
-                    main_menu_gui.set_mouse_point(last_mouse_position)
-                    if calibration_gui is not None and not in_calibration:
-                        calibration_gui.set_mouse_point(last_mouse_position)
-                    publisher.push(last_mouse_position)
-        except Exception as e:
-            print(e)
+                    if calibration_gui is not None:
+                        if not in_calibration:
+                            calibration_gui.set_mouse_point(last_mouse_position)
+                    else:
+                        main_menu_gui.set_mouse_point(last_mouse_position)
+                        publisher.push(last_mouse_position)
+        except Exception:
+            traceback.print_exc()
         time.sleep(0.1)
 
 
-def close_and_unset_calibration_gui():
-    global calibration_gui, in_calibration
+def close_and_unset_calibration_gui(accept_temp_calibration_result: bool):
+    global calibration_gui, in_calibration, temp_calibration_result, calibration_result
     in_calibration = False
     calibration_gui.close_window()
     calibration_gui = None
+    if accept_temp_calibration_result:
+        calibration_result = temp_calibration_result
+        calibration.delete_result(selected_data_source, selected_tracking_approach)
+        calibration.save_result(selected_data_source, selected_tracking_approach, calibration_result)
+    else:
+        tracking_approach.calibrate(calibration_result)
+    temp_calibration_result = None
 
 
 def redo_calibration():
@@ -151,7 +161,7 @@ def calibration_done():
         [
             CalibrationGUIOption(
                 text="Keep Calibration\n(or press <Enter>)",
-                func=close_and_unset_calibration_gui,
+                func=lambda: close_and_unset_calibration_gui(True),
                 sequence="<Return>",
             ),
             CalibrationGUIOption(
@@ -161,7 +171,7 @@ def calibration_done():
             ),
             CalibrationGUIOption(
                 text="Cancel and Close\n(or press <Escape>)",
-                func=close_and_unset_calibration_gui,
+                func=lambda: close_and_unset_calibration_gui(False),
                 sequence="<Escape>",
             ),
         ]
@@ -171,12 +181,12 @@ def calibration_done():
 
 def on_calibration_requested(new_calibration_gui: CalibrationGUI):
     global calibration_gui, in_calibration
-    calibration_gui = new_calibration_gui
+    calibration_gui=new_calibration_gui
 
-    in_calibration = True
+    in_calibration=True
     calibration_gui.unset_mouse_point()
 
-    calibration_instructions = tracking_approach.get_calibration_instructions()
+    calibration_instructions=tracking_approach.get_calibration_instructions()
     show_preparational_text(
         calibration_instructions.preparational_text,
         lambda: execute_calibrations(iter(calibration_instructions.instructions), calibration_done),
@@ -184,15 +194,15 @@ def on_calibration_requested(new_calibration_gui: CalibrationGUI):
 
 
 def show_preparational_text(preparational_text: str, on_finish: Callable, end_time=None):
-    now = datetime.now()
+    now=datetime.now()
     if end_time is None:
-        end_time = now + timedelta(seconds=1)
+        end_time=now + timedelta(seconds=1)
 
     if end_time < now:
         calibration_gui.unset_main_text()
         on_finish()
     else:
-        remaining_seconds = int((end_time - now).total_seconds())
+        remaining_seconds=int((end_time - now).total_seconds())
         calibration_gui.set_main_text(
             preparational_text
             + "\nYou can close this window by pressing <Escape>."
@@ -208,37 +218,36 @@ def scale_vector_to_screen(vector):
 
 def get_new_mouse_position(mouse_movement, last_mouse_position):
     if mouse_movement.type == MouseMovementType.TO_POSITION:
-        new_mouse_position = scale_vector_to_screen(mouse_movement.vector)
+        new_mouse_position=scale_vector_to_screen(mouse_movement.vector)
     if mouse_movement.type == MouseMovementType.BY:
-        new_mouse_position = [
+        new_mouse_position=[
             last_mouse_position[0] + mouse_movement.vector[0] * mouse_speed,
             last_mouse_position[1] - mouse_movement.vector[1] * mouse_speed,
         ]
         if new_mouse_position[0] < 0:
-            new_mouse_position[0] = 0
+            new_mouse_position[0]=0
         if new_mouse_position[0] > monitor.width:
-            new_mouse_position[0] = monitor.width
+            new_mouse_position[0]=monitor.width
         if new_mouse_position[1] < 0:
-            new_mouse_position[1] = 0
+            new_mouse_position[1]=0
         if new_mouse_position[1] > monitor.height:
-            new_mouse_position[1] = monitor.height
+            new_mouse_position[1]=monitor.height
     return new_mouse_position
 
 
 def execute_calibrations(
     calibration_instructions: Iterator,
     on_finish: Callable,
-    collected_vectors: List[Vector] = [],
+    collected_vectors: List[Vector]=[],
 ):
-    next_instruction = next(calibration_instructions, None)
+    global temp_calibration_result
+    next_instruction=next(calibration_instructions, None)
     if next_instruction is None:
         calibration_gui.unset_calibration_point()
         calibration_gui.unset_main_text()
         calibration_gui.unset_image()
-        result = CalibrationResult(collected_vectors)
-        calibration.delete_result(selected_data_source, selected_tracking_approach)
-        calibration.save_result(selected_data_source, selected_tracking_approach, result)
-        reload_calibration_result()
+        temp_calibration_result=CalibrationResult(collected_vectors)
+        tracking_approach.calibrate(temp_calibration_result)
         on_finish()
     else:
         execute_calibration(
@@ -252,9 +261,9 @@ def execute_calibration(calibration_instruction: CalibrationInstruction, on_fini
     calibration_gui.unset_main_text()
     calibration_gui.unset_image()
 
-    vector = calibration_instruction.vector
-    text = calibration_instruction.text
-    image = calibration_instruction.image
+    vector=calibration_instruction.vector
+    text=calibration_instruction.text
+    image=calibration_instruction.image
 
     if vector is not None:
         calibration_gui.set_calibration_point(scale_vector_to_screen(vector))
@@ -263,7 +272,7 @@ def execute_calibration(calibration_instruction: CalibrationInstruction, on_fini
     if image is not None:
         calibration_gui.set_image(image)
 
-    end_time = datetime.now() + timedelta(seconds=5)
+    end_time=datetime.now() + timedelta(seconds=5)
     calibration_gui.after(2000, collect_calibration_vectors, calibration_instruction, on_finish, end_time)
 
 
@@ -271,21 +280,21 @@ def collect_calibration_vectors(
     calibration_instruction: CalibrationInstruction,
     on_finish: Callable[[Vector], None],
     end_time: datetime,
-    vectors: List[Vector] = None,
+    vectors: List[Vector]=None,
 ):
     if vectors is None:
-        vectors = []
+        vectors=[]
 
-    now = datetime.now()
+    now=datetime.now()
     if now > end_time:
         on_finish(np.mean(np.array(vectors), axis=0) if len(vectors) > 0 else (0, 0))
     else:
         if last_data_source_vector is not None:
             vectors.append(last_data_source_vector)
 
-        vector = calibration_instruction.vector
-        text = calibration_instruction.text
-        remaining_seconds = int((end_time - now).total_seconds())
+        vector=calibration_instruction.vector
+        text=calibration_instruction.text
+        remaining_seconds=int((end_time - now).total_seconds())
 
         if vector is not None:
             calibration_gui.set_calibration_point(scale_vector_to_screen(vector), str(remaining_seconds))
@@ -297,7 +306,7 @@ def collect_calibration_vectors(
         calibration_gui.after(100, collect_calibration_vectors, calibration_instruction, on_finish, end_time, vectors)
 
 
-main_menu_gui = MainMenuGUI()
+main_menu_gui=MainMenuGUI()
 
 reload_data_source(args.data_source)
 reload_tracking_approach(args.tracking_approach)
@@ -322,11 +331,11 @@ main_menu_gui.on_publisher_change_requested(reload_publisher)
 
 main_menu_gui.on_calibration_requested(on_calibration_requested)
 
-request_loop = Thread(target=loop)
+request_loop=Thread(target=loop)
 request_loop.start()
 
 main_menu_gui.mainloop()
-running = False
+running=False
 request_loop.join()
 data_source.stop()
 publisher.stop()

@@ -563,11 +563,12 @@ class CalibrationGUI:
     def set_mouse_point(self, vector: Vector):
         self.unset_mouse_point()
         self._update_buttons(vector)
-        radius = 5
-        x, y = vector
-        self.canvas.create_oval(
-            x - radius, y - radius, x + radius, y + radius, fill="white", tag="mouse_point", outline=""
-        )
+        if self.window.winfo_exists():  # in case the window got closed by a button action
+            radius = 5
+            x, y = vector
+            self.canvas.create_oval(
+                x - radius, y - radius, x + radius, y + radius, fill="white", tag="mouse_point", outline=""
+            )
 
     def _update_buttons(self, vector: Vector):
         for button in self.buttons:
