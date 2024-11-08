@@ -1,7 +1,5 @@
 import platform
 import tkinter
-from datetime import datetime, timedelta
-from random import random
 from tkinter import Canvas, Tk, Toplevel
 from tkinter.ttk import Button, Frame, Label, Style
 from typing import Callable
@@ -12,6 +10,7 @@ from PIL.ImageTk import PhotoImage
 
 from guis.tkinter.tkinter_dropdown import DropdownOption, Dropdown
 from misc import Vector
+from guis.tkinter.tkinter_canvas_gaze_button import CanvasGazeButton
 
 COLORS = {
     "bg": "#333",
@@ -221,92 +220,6 @@ class CalibrationGUIOption:
         self.sequence = sequence
 
 
-class _CalibrationGUIButton:
-
-    def __init__(
-        self, canvas: Canvas, text: str, func: callable, focus_time_in_seconds: int, x0: int, y0: int, x1: int, y1: int
-    ):
-        self.canvas = canvas
-        self.text = text
-        self.func = func
-        self.focus_time_in_seconds = focus_time_in_seconds
-        self.x0 = x0
-        self.y0 = y0
-        self.x1 = x1
-        self.y1 = y1
-        self.tag = f"calibration_gui_button_{int(random()*1000000)}"
-        self.x1_progress_bar = self.x0
-
-        self.progress_rect = None
-
-        self.focus_start = None
-        self.focus_end = None
-
-    def delete(self):
-        self.canvas.delete(self.tag)
-
-    def update(self, vector):
-        if self.is_vector_in_button(vector):
-            if self.focus_start is None:
-                self.focus_start = datetime.now()
-                self.focus_end = self.focus_start + timedelta(seconds=self.focus_time_in_seconds)
-            now = datetime.now().timestamp()
-            progress = (now - self.focus_start.timestamp()) / (
-                self.focus_end.timestamp() - self.focus_start.timestamp()
-            )
-            self.set_progress(progress)
-            if progress >= 1.0:
-                self.focus_start = None
-                self.focus_end = None
-                self.set_progress(0.0)
-                self.func()
-        else:
-            if self.focus_start is not None:
-                self.focus_start = None
-                self.focus_end = None
-                self.set_progress(0.0)
-
-    def set_progress(self, progress: float):
-        x1_progress_bar = self.x0 + int((self.x1 - self.x0) * progress)
-        if x1_progress_bar < self.x0:
-            x1_progress_bar = self.x0
-        if x1_progress_bar > self.x1:
-            x1_progress_bar = self.x1
-        self.canvas.coords(self.progress_rect, self.x0, self.y0, x1_progress_bar, self.y1)
-
-    def draw(self):
-        self.delete()
-        self.canvas.create_rectangle(
-            self.x0,
-            self.y0,
-            self.x1,
-            self.y1,
-            fill=COLORS["button_bg"],
-            outline="",
-            tag=self.tag,
-        )
-        self.progress_rect = self.canvas.create_rectangle(
-            self.x0,
-            self.y0,
-            self.x0,
-            self.y1,
-            fill=COLORS["button_bg_hover"],
-            outline="",
-            tag=self.tag,
-        )
-        self.canvas.create_text(
-            self.x0 + (self.x1 - self.x0) / 2,
-            self.y0 + (self.y1 - self.y0) / 2,
-            text=self.text,
-            font=("default", 24),
-            fill=COLORS["button_text"],
-            tag=self.tag,
-        )
-
-    def is_vector_in_button(self, vector: Vector) -> bool:
-        return self.x0 <= vector[0] <= self.x1 and self.y0 <= vector[1] <= self.y1
-
-
 class CalibrationGUI:
 
     def __init__(self, root_window):
@@ -335,8 +248,8 @@ class CalibrationGUI:
         )
         self.canvas.pack()
         self.canvas.bind("<Button-1>", self.on_canvas_click)
-        self.focus_time_in_seconds = 3
-        self.buttons = []
+        self.seconds_till_button_trigger = 3
+        self.buttons: list[CanvasGazeButton] = []
 
     def on_canvas_click(self, mouse_click):
         x = mouse_click.x
@@ -432,7 +345,7 @@ class CalibrationGUI:
 
     def _update_buttons(self, vector: Vector):
         for button in self.buttons:
-            button.update(vector)
+            button.update_progress_and_trigger(vector)
 
     def unset_mouse_point(self):
         self.canvas.delete("mouse_point")
@@ -469,11 +382,12 @@ class CalibrationGUI:
             x1 = (i + 1) * width_per_option
             y1 = self.screen_height
             margin = 30
-            button = _CalibrationGUIButton(
+            button = CanvasGazeButton(
                 self.canvas,
                 option.text,
                 option.func,
-                self.focus_time_in_seconds,
+                self.seconds_till_button_trigger,
+                COLORS,
                 x0 + margin,
                 y0 + margin,
                 x1 - margin,
