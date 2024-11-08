@@ -10,7 +10,7 @@ import screeninfo
 import calibration
 from calibration import CalibrationInstruction, CalibrationResult
 from data_sources import data_sources
-from guis.tkinter_gui import MainMenuGUI
+from guis.tkinter_gui import CalibrationGUI, CalibrationGUIOption, MainMenuGUI
 from misc import Vector
 from mouse_movement import MouseMovementType
 from publishers import publishers
@@ -50,6 +50,7 @@ tracking_approach = None
 publisher = None
 
 calibration_result = None
+temp_calibration_result = None
 
 main_menu_gui = None
 calibration_gui = None
@@ -100,10 +101,9 @@ def loop():
     global last_data_source_vector, last_mouse_position
     while running:
         try:
-            main_menu_gui.unset_mouse_point()
             last_data_source_vector = data_source.get_next_vector()
-            if main_menu_gui is not None:
-                main_menu_gui.set_data_source_has_data(last_data_source_vector is not None)
+            main_menu_gui.unset_mouse_point()
+            main_menu_gui.set_data_source_has_data(last_data_source_vector is not None)
             if last_data_source_vector is not None and tracking_approach.is_calibrated():
                 mouse_movement = tracking_approach.get_next_mouse_movement(last_data_source_vector)
                 if mouse_movement is not None:
@@ -117,23 +117,64 @@ def loop():
         time.sleep(0.1)
 
 
-def unset_calibration_gui():
+def close_and_unset_calibration_gui():
     global calibration_gui, in_calibration
-    calibration_gui = None
     in_calibration = False
+    calibration_gui.close_window()
+    calibration_gui = None
+
+
+def redo_calibration():
+    if not in_calibration:
+        calibration_gui.unset_options()
+        on_calibration_requested(calibration_gui)
+
+
+def show_final_text_for_seconds(seconds, on_finish):
+    if in_calibration or calibration_gui is None:  # when a calibration started somewhere else or the gui was closed
+        return
+    if seconds == 0:
+        on_finish()
+    else:
+        calibration_gui.set_main_text(
+            "Calibration Done. Do you this calibration?"
+            + "\nEither click or look at the options below."
+            + f"\nIf you don't decide, a re-calibration starts in {seconds}"
+        )
+        calibration_gui.after(1000, show_final_text_for_seconds, seconds - 1, on_finish)
 
 
 def calibration_done():
     global in_calibration
     in_calibration = False
-    calibration_gui.set_main_text("Calibration Done. Press <ESC> or <CTRL-c> or close this window.")
+    calibration_gui.set_options(
+        [
+            CalibrationGUIOption(
+                text="Keep Calibration\n(or press <Enter>)",
+                func=close_and_unset_calibration_gui,
+                sequence="<Return>",
+            ),
+            CalibrationGUIOption(
+                text='Redo Calibration\n(or press "r")',
+                func=redo_calibration,
+                sequence="r",
+            ),
+            CalibrationGUIOption(
+                text="Cancel and Close\n(or press <Escape>)",
+                func=close_and_unset_calibration_gui,
+                sequence="<Escape>",
+            ),
+        ]
+    )
+    show_final_text_for_seconds(30, redo_calibration)
 
 
-def on_calibration_requested(new_calibration_gui):
+def on_calibration_requested(new_calibration_gui: CalibrationGUI):
     global calibration_gui, in_calibration
     calibration_gui = new_calibration_gui
-    calibration_gui.on_close(unset_calibration_gui)
+
     in_calibration = True
+    calibration_gui.unset_mouse_point()
 
     calibration_instructions = tracking_approach.get_calibration_instructions()
     show_preparational_text(
@@ -145,14 +186,19 @@ def on_calibration_requested(new_calibration_gui):
 def show_preparational_text(preparational_text: str, on_finish: Callable, end_time=None):
     now = datetime.now()
     if end_time is None:
-        end_time = now + timedelta(seconds=15)
+        end_time = now + timedelta(seconds=1)
 
     if end_time < now:
         calibration_gui.unset_main_text()
         on_finish()
     else:
         remaining_seconds = int((end_time - now).total_seconds())
-        calibration_gui.set_main_text(preparational_text + f"\nInstructions come in {remaining_seconds}")
+        calibration_gui.set_main_text(
+            preparational_text
+            + "\nYou can close this window by pressing <Escape>."
+            + f"\nInstructions come in {remaining_seconds}"
+        )
+        calibration_gui.bind("<Escape>", lambda _: calibration_gui.close_window())
         calibration_gui.after(250, show_preparational_text, preparational_text, on_finish, end_time)
 
 
