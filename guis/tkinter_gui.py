@@ -8,9 +8,9 @@ import screeninfo
 from PIL import Image
 from PIL.ImageTk import PhotoImage
 
-from guis.tkinter.tkinter_dropdown import DropdownOption, Dropdown
-from misc import Vector
 from guis.tkinter.tkinter_canvas_gaze_button import CanvasGazeButton
+from guis.tkinter.tkinter_dropdown import Dropdown, DropdownOption
+from misc import Vector
 
 COLORS = {
     "bg": "#333",
@@ -32,16 +32,13 @@ def apply_theme(root):
     style = Style()
     style.theme_use("clam")
 
-    # background
     root.config(bg=COLORS["bg"])
-    # general
     style.configure("TFrame", background=COLORS["bg"])
     style.configure(
         "TButton", background=COLORS["button_bg"], foreground=COLORS["button_text"], borderwidth=0, padding=15
     )
     style.map("TButton", background=[("active", COLORS["button_bg_hover"])])
     style.configure("TLabel", background=COLORS["label_bg"], foreground=COLORS["label_text"])
-    # dropdown
     style.configure("Dropdown.TFrame", bordercolor=COLORS["bg"], background=COLORS["dropdown_bg"])
     style.configure("DropdownItem.TFrame", background=COLORS["dropdown_item_bg"])
     style.map("DropdownItem.TFrame", background=[("hover", COLORS["dropdown_item_bg_hover"])])
@@ -188,19 +185,12 @@ class MainMenuGUI:
     # the rest
 
     def set_has_calibration_result(self, has_result):
-        self.calibration_results_label.config(text=("✅︎ calibrated" if has_result else "❌ not yet calibrated."))
+        self.calibration_results_label.config(text="✅︎ calibrated" if has_result else "❌ not yet calibrated.")
 
     def set_data_source_has_data(self, data_source_has_data):
         self.data_source_has_data_label.config(
-            text=(
-                "✅︎ receive data from data source." if data_source_has_data else "❌ receive no data from data source."
-            )
+            text="✅︎ receive data from data source." if data_source_has_data else "❌ receive no data from data source."
         )
-
-    def _start_calibration(self):
-        calibration_gui = CalibrationGUI(self.window)
-        if self.calibration_callback is not None:
-            self.calibration_callback(calibration_gui)
 
     def mainloop(self):
         self.window.mainloop()
@@ -211,8 +201,13 @@ class MainMenuGUI:
     def after(self, milliseconds: int, func: Callable = None, *args):
         self.window.after(milliseconds, func, *args)
 
+    def _start_calibration(self):
+        calibration_gui = CalibrationGUI(self.window)
+        if self.calibration_callback is not None:
+            self.calibration_callback(calibration_gui)
 
-class CalibrationGUIOption:
+
+class CalibrationGUIButton:
 
     def __init__(self, text: str, func: callable, sequence: str = None):
         self.text = text
@@ -247,17 +242,9 @@ class CalibrationGUI:
             highlightthickness=0,
         )
         self.canvas.pack()
-        self.canvas.bind("<Button-1>", self.on_canvas_click)
+        self.canvas.bind("<Button-1>", self._on_canvas_click)
+        self.canvas_buttons: list[CanvasGazeButton] = []
         self.seconds_till_button_trigger = 3
-        self.buttons: list[CanvasGazeButton] = []
-
-    def on_canvas_click(self, mouse_click):
-        x = mouse_click.x
-        y = mouse_click.y
-        for button in self.buttons:
-            if button.is_vector_in_button((x, y)):
-                button.func()
-                break
 
     def close_window(self):
         self.window.destroy()
@@ -344,7 +331,7 @@ class CalibrationGUI:
             )
 
     def _update_buttons(self, vector: Vector):
-        for button in self.buttons:
+        for button in self.canvas_buttons:
             button.update_progress_and_trigger(vector)
 
     def unset_mouse_point(self):
@@ -365,18 +352,18 @@ class CalibrationGUI:
     def after(self, milliseconds: int, func: Callable = None, *args):
         self.window.after(milliseconds, func, *args)
 
-    def unset_options(self):
-        if len(self.buttons) > 0:
-            for b in self.buttons:
+    def unset_buttons(self):
+        if len(self.canvas_buttons) > 0:
+            for b in self.canvas_buttons:
                 b.delete()
-        self.buttons = []
+        self.canvas_buttons = []
 
-    def set_options(self, options: list[CalibrationGUIOption]):
-        self.unset_options()
-        width_per_option = self.screen_width / len(options)
+    def set_buttons(self, buttons: list[CalibrationGUIButton]):
+        self.unset_buttons()
+        width_per_option = self.screen_width / len(buttons)
         height_per_option = self.screen_height / 4  # an arbitrary number
 
-        for i, option in enumerate(options):
+        for i, button in enumerate(buttons):
             x0 = i * width_per_option
             y0 = self.screen_height - height_per_option
             x1 = (i + 1) * width_per_option
@@ -384,8 +371,8 @@ class CalibrationGUI:
             margin = 30
             button = CanvasGazeButton(
                 self.canvas,
-                option.text,
-                option.func,
+                button.text,
+                button.func,
                 self.seconds_till_button_trigger,
                 COLORS,
                 x0 + margin,
@@ -393,6 +380,6 @@ class CalibrationGUI:
                 x1 - margin,
                 y1 - margin,
             )
-            self.bind(option.sequence, lambda _, f=option.func: f())
-            self.buttons.append(button)
+            self.bind(button.sequence, lambda _, f=button.func: f())
+            self.canvas_buttons.append(button)
             button.draw()
