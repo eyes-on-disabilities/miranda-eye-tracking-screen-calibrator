@@ -383,3 +383,11 @@ class CalibrationGUI:
             self.bind(button.sequence, lambda _, f=button.func: f())
             self.canvas_buttons.append(button)
             button.draw()
+
+    def _on_canvas_click(self, mouse_click):
+        x = mouse_click.x
+        y = mouse_click.y
+        for button in self.canvas_buttons:
+            if button.is_vector_in_button((x, y)):
+                button.func()
+                break
