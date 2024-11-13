@@ -10,7 +10,7 @@ from PIL.ImageTk import PhotoImage
 
 from guis.tkinter.tkinter_canvas_gaze_button import CanvasGazeButton
 from guis.tkinter.tkinter_dropdown import Dropdown, DropdownOption
-from misc import Vector
+from misc import Vector, resource_path
 import config
 
 COLORS = {
@@ -66,7 +66,7 @@ class MainMenuGUI:
             icon_image = Image.open(config.APP_ICON_LINUX)
             self.window.iconphoto(False, PhotoImage(icon_image))
 
-        image = Image.open("assets/icon.png").resize((64, 64))
+        image = Image.open(resource_path("assets/icon.png")).resize((64, 64))
         self.tk_image = PhotoImage(image)  # 'self' to keep it in memory
         image_label = Label(self.window, image=self.tk_image, style="Image.TLabel")
         image_label.pack(pady=20)
@@ -244,6 +244,8 @@ class CalibrationGUI:
         self.canvas.bind("<Button-1>", self._on_canvas_click)
         self.canvas_buttons: list[CanvasGazeButton] = []
         self.seconds_till_button_trigger = 3
+
+        self.window.focus_force()
 
     def close_window(self):
         self.window.destroy()
