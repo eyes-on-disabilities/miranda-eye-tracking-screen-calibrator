@@ -9,6 +9,7 @@ import numpy as np
 import screeninfo
 
 import calibration
+import config
 from calibration import CalibrationInstruction, CalibrationResult
 from data_sources import data_sources
 from guis.tkinter_gui import CalibrationGUI, CalibrationGUIButton, MainMenuGUI
@@ -39,13 +40,6 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-
-MOUSE_SPEED_IN_PX = 20
-LOOP_SLEEP_IN_MILLISEC = 100
-SHOW_FINAL_CALIBRATION_TEXT_FOR_SEC = 30
-SHOW_PREP_CALIBRATION_TEXT_FOR_SEC = 30
-WAIT_TIME_BEFORE_COLLECTING_VECTORS_IN_SEC = 3
-VECTOR_COLLECTION_TIME_IN_SEC = 5
 
 selected_data_source = None
 selected_tracking_approach = None
@@ -124,7 +118,7 @@ def loop():
                         publisher.push(last_mouse_position)
         except Exception:
             traceback.print_exc()
-        time.sleep(LOOP_SLEEP_IN_MILLISEC / 1000)
+        time.sleep(config.LOOP_SLEEP_IN_MILLISEC / 1000)
 
 
 def close_and_unset_calibration_gui(accept_temp_calibration_result: bool):
@@ -164,7 +158,7 @@ def show_final_text_for_seconds(seconds, on_finish):
 def calibration_done():
     global in_calibration
     in_calibration = False
-    calibration_gui.set_options(
+    calibration_gui.set_buttons(
         [
             CalibrationGUIButton(
                 text="Keep Calibration\n(or press <Enter>)",
@@ -183,7 +177,7 @@ def calibration_done():
             ),
         ]
     )
-    show_final_text_for_seconds(SHOW_FINAL_CALIBRATION_TEXT_FOR_SEC, redo_calibration)
+    show_final_text_for_seconds(config.SHOW_FINAL_CALIBRATION_TEXT_FOR_SEC, redo_calibration)
 
 
 def on_calibration_requested(new_calibration_gui: CalibrationGUI):
@@ -203,7 +197,7 @@ def on_calibration_requested(new_calibration_gui: CalibrationGUI):
 def show_preparational_text(preparational_text: str, on_finish: Callable, end_time=None):
     now = datetime.now()
     if end_time is None:
-        end_time = now + timedelta(seconds=SHOW_PREP_CALIBRATION_TEXT_FOR_SEC)
+        end_time = now + timedelta(seconds=config.SHOW_PREP_CALIBRATION_TEXT_FOR_SEC)
 
     if end_time < now:
         calibration_gui.unset_main_text()
@@ -228,8 +222,8 @@ def get_new_mouse_position(mouse_movement, last_mouse_position):
         new_mouse_position = scale_vector_to_screen(mouse_movement.vector)
     if mouse_movement.type == MouseMovementType.BY:
         new_mouse_position = [
-            last_mouse_position[0] + mouse_movement.vector[0] * MOUSE_SPEED_IN_PX,
-            last_mouse_position[1] - mouse_movement.vector[1] * MOUSE_SPEED_IN_PX,
+            last_mouse_position[0] + mouse_movement.vector[0] * config.MOUSE_SPEED_IN_PX,
+            last_mouse_position[1] - mouse_movement.vector[1] * config.MOUSE_SPEED_IN_PX,
         ]
         if new_mouse_position[0] < 0:
             new_mouse_position[0] = 0
@@ -279,9 +273,11 @@ def execute_calibration(calibration_instruction: CalibrationInstruction, on_fini
     if image is not None:
         calibration_gui.set_image(image)
 
-    end_time = datetime.now() + timedelta(seconds=VECTOR_COLLECTION_TIME_IN_SEC)
+    end_time = datetime.now() + timedelta(
+        seconds=config.WAIT_TIME_BEFORE_COLLECTING_VECTORS_IN_SEC + config.VECTOR_COLLECTION_TIME_IN_SEC
+    )
     calibration_gui.after(
-        WAIT_TIME_BEFORE_COLLECTING_VECTORS_IN_SEC * 1000,
+        config.WAIT_TIME_BEFORE_COLLECTING_VECTORS_IN_SEC * 1000,
         collect_calibration_vectors,
         calibration_instruction,
         on_finish,
@@ -317,7 +313,12 @@ def collect_calibration_vectors(
             calibration_gui.set_main_text(str(remaining_seconds))
 
         calibration_gui.after(
-            LOOP_SLEEP_IN_MILLISEC, collect_calibration_vectors, calibration_instruction, on_finish, end_time, vectors
+            config.LOOP_SLEEP_IN_MILLISEC,
+            collect_calibration_vectors,
+            calibration_instruction,
+            on_finish,
+            end_time,
+            vectors,
         )
 
 

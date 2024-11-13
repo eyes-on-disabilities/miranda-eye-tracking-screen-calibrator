@@ -11,6 +11,7 @@ from PIL.ImageTk import PhotoImage
 from guis.tkinter.tkinter_canvas_gaze_button import CanvasGazeButton
 from guis.tkinter.tkinter_dropdown import Dropdown, DropdownOption
 from misc import Vector
+import config
 
 COLORS = {
     "bg": "#333",
@@ -54,17 +55,16 @@ class MainMenuGUI:
 
     def __init__(self):
         self.window = Tk()
-        self.window.title("Miranda Eye Track")
-        self.window.geometry("650x450")
+        self.window.title(config.APP_FULL_NAME)
+        self.window.geometry(f"{config.MAIN_MENU_WIDTH}x{config.MAIN_MENU_HEIGHT}")
         apply_theme(self.window)
 
         os_name = platform.system()
         if os_name == "Windows":
-            self.window.iconbitmap("assets/icon.ico")
+            self.window.iconbitmap(config.APP_ICON_WINDOWS)
         elif os_name in ("Linux", "Darwin"):  # Darwin is for macOS
-            icon_image = Image.open("assets/icon.png")
-            icon_photo = PhotoImage(icon_image)
-            self.window.iconphoto(False, icon_photo)
+            icon_image = Image.open(config.APP_ICON_LINUX)
+            self.window.iconphoto(False, PhotoImage(icon_image))
 
         image = Image.open("assets/icon.png").resize((64, 64))
         self.tk_image = PhotoImage(image)  # 'self' to keep it in memory
@@ -219,15 +219,14 @@ class CalibrationGUI:
 
     def __init__(self, root_window):
         self.window = Toplevel(root_window)
-        self.window.title("Miranda Eye Track")
+        self.window.title(config.APP_FULL_NAME)
 
         os_name = platform.system()
         if os_name == "Windows":
-            self.window.iconbitmap("assets/icon.ico")
+            self.window.iconbitmap(config.APP_ICON_WINDOWS)
         elif os_name in ("Linux", "Darwin"):  # Darwin is for macOS
-            icon_image = Image.open("assets/icon.png")
-            icon_photo = PhotoImage(icon_image)
-            self.window.iconphoto(False, icon_photo)
+            icon_image = Image.open(config.APP_ICON_LINUX)
+            self.window.iconphoto(False, PhotoImage(icon_image))
 
         self.window.attributes("-fullscreen", True)
 
@@ -369,7 +368,7 @@ class CalibrationGUI:
             x1 = (i + 1) * width_per_option
             y1 = self.screen_height
             margin = 30
-            button = CanvasGazeButton(
+            canvas_button = CanvasGazeButton(
                 self.canvas,
                 button.text,
                 button.func,
@@ -381,8 +380,8 @@ class CalibrationGUI:
                 y1 - margin,
             )
             self.bind(button.sequence, lambda _, f=button.func: f())
-            self.canvas_buttons.append(button)
-            button.draw()
+            self.canvas_buttons.append(canvas_button)
+            canvas_button.draw()
 
     def _on_canvas_click(self, mouse_click):
         x = mouse_click.x
