@@ -121,11 +121,15 @@ def loop():
         time.sleep(config.LOOP_SLEEP_IN_MILLISEC / 1000)
 
 
-def close_and_unset_calibration_gui(accept_temp_calibration_result: bool):
-    global calibration_gui, in_calibration, temp_calibration_result, calibration_result
+def close_and_unset_calibration_gui():
+    global calibration_gui, in_calibration
     in_calibration = False
     calibration_gui.close_window()
     calibration_gui = None
+
+
+def accept_or_reject_temp_calibration_result(accept_temp_calibration_result: bool):
+    global temp_calibration_result, calibration_result
     if accept_temp_calibration_result:
         calibration_result = temp_calibration_result
         calibration.delete_result(selected_data_source, selected_tracking_approach)
@@ -162,7 +166,7 @@ def calibration_done():
         [
             CalibrationGUIButton(
                 text="Keep Calibration\n(or press <Enter>)",
-                func=lambda: close_and_unset_calibration_gui(True),
+                func=lambda: (close_and_unset_calibration_gui(), accept_or_reject_temp_calibration_result(True)),
                 sequence="<Return>",
             ),
             CalibrationGUIButton(
@@ -172,7 +176,7 @@ def calibration_done():
             ),
             CalibrationGUIButton(
                 text="Cancel and Close\n(or press <Escape>)",
-                func=lambda: close_and_unset_calibration_gui(False),
+                func=lambda: (close_and_unset_calibration_gui(), accept_or_reject_temp_calibration_result(False)),
                 sequence="<Escape>",
             ),
         ]
@@ -209,7 +213,7 @@ def show_preparational_text(preparational_text: str, on_finish: Callable, end_ti
             + "\nYou can close this window by pressing <Escape>."
             + f"\nInstructions come in {remaining_seconds}"
         )
-        calibration_gui.bind("<Escape>", lambda _: calibration_gui.close_window())
+        calibration_gui.bind("<Escape>", lambda _: close_and_unset_calibration_gui())
         calibration_gui.after(250, show_preparational_text, preparational_text, on_finish, end_time)
 
 
