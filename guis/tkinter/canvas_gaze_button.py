@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from random import random
 from tkinter import Canvas
 
+from guis.tkinter import COLORS
 from misc import Vector
 
 
@@ -15,7 +16,6 @@ class CanvasGazeButton:
         text: str,
         func: callable,
         seconds_till_trigger: int,
-        colors: dict,
         x0: int,
         y0: int,
         x1: int,
@@ -25,7 +25,6 @@ class CanvasGazeButton:
         self.text = text
         self.func = func
         self.seconds_till_trigger = seconds_till_trigger
-        self.colors = colors
         self.x0 = x0
         self.y0 = y0
         self.x1 = x1
@@ -77,7 +76,7 @@ class CanvasGazeButton:
             self.y0,
             self.x1,
             self.y1,
-            fill=self.colors["button_bg"],
+            fill=COLORS["button_bg"],
             outline="",
             tag=self.tag,
         )
@@ -86,7 +85,7 @@ class CanvasGazeButton:
             self.y0,
             self.x0,
             self.y1,
-            fill=self.colors["button_bg_hover"],
+            fill=COLORS["button_bg_hover"],
             outline="",
             tag=self.tag,
         )
@@ -97,7 +96,7 @@ class CanvasGazeButton:
             self.y0 + (self.y1 - self.y0) / 2,
             text=self.text,
             font=("default", 24),
-            fill=self.colors["button_text"],
+            fill=COLORS["button_text"],
             tag=self.tag,
         )
 

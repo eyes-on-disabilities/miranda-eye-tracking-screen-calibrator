@@ -1,6 +1,6 @@
-from guis.tkinter_gui import MainMenuOption
 from publishers.udp_publisher import UdpPublisher
 from misc import resource_path
+from guis.tkinter.main_menu_window import MainMenuOption
 
 publishers: dict[MainMenuOption] = {
     "udp": MainMenuOption(

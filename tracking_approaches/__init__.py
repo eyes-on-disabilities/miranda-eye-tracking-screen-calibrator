@@ -1,8 +1,8 @@
-from guis.tkinter_gui import MainMenuOption
 from tracking_approaches.d_pad_tracking_approach import DPadTrackingApproach
 from tracking_approaches.gaze_on_screen_tracking_approach import \
     GazeOnScreenTrackingApproach
 from misc import resource_path
+from guis.tkinter.main_menu_window import MainMenuOption
 
 tracking_approaches: dict[MainMenuOption] = {
     "gaze-on-screen": MainMenuOption(

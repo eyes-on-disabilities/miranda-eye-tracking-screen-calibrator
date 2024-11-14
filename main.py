@@ -12,7 +12,9 @@ import calibration
 import config
 from calibration import CalibrationInstruction, CalibrationResult
 from data_sources import data_sources
-from guis.tkinter_gui import CalibrationGUI, CalibrationGUIButton, MainMenuGUI
+from guis.tkinter.calibration_gui_window import (CalibrationGUI,
+                                                 CalibrationGUIButton)
+from guis.tkinter.main_menu_window import MainMenuGUI
 from misc import Vector
 from mouse_movement import MouseMovementType
 from publishers import publishers

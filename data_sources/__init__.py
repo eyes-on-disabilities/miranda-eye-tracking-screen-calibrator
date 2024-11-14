@@ -1,7 +1,7 @@
 from data_sources.mouse_data_source import MouseDataSource
 from data_sources.opentrack_data_source import OpentrackDataSource
-from guis.tkinter_gui import MainMenuOption
 from misc import resource_path
+from guis.tkinter.main_menu_window import MainMenuOption
 
 data_sources: dict[MainMenuOption] = {
     "mouse": MainMenuOption(
