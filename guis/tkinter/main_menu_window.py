@@ -1,7 +1,7 @@
 import platform
 import tkinter
 from tkinter import Canvas, Menu, Tk
-from tkinter.ttk import Button, Frame, Label, Style
+from tkinter.ttk import Button, Frame, Label
 from typing import Callable
 
 import screeninfo
@@ -9,34 +9,11 @@ from PIL import Image
 from PIL.ImageTk import PhotoImage
 
 import config
-from guis.tkinter import COLORS
+from guis.tkinter import COLORS, apply_theme
+from guis.tkinter.about_window import AboutWindow
 from guis.tkinter.calibration_window import CalibrationWindow
 from guis.tkinter.dropdown import Dropdown, DropdownOption
 from misc import Vector, resource_path
-
-
-def apply_theme(root):
-    style = Style()
-    style.theme_use("clam")
-    # standard widgets
-    root.config(bg=COLORS["bg"])
-    style.configure("TFrame", background=COLORS["bg"])
-    style.configure(
-        "TButton",
-        background=COLORS["button_bg"],
-        foreground=COLORS["button_text"],
-        borderwidth=0,
-        padding=15,
-    )
-    style.map("TButton", background=[("active", COLORS["button_bg_hover"])])
-    style.configure("TLabel", background=COLORS["label_bg"], foreground=COLORS["label_text"])
-    # custom widgets
-    style.configure("Dropdown.TFrame", bordercolor=COLORS["bg"], background=COLORS["dropdown_bg"])
-    style.configure("DropdownItem.TFrame", background=COLORS["dropdown_item_bg"])
-    style.map("DropdownItem.TFrame", background=[("hover", COLORS["dropdown_item_bg_hover"])])
-    style.configure("DropdownItem.TLabel", background=COLORS["dropdown_item_bg"])
-    style.map("DropdownItem.TLabel", background=[("hover", COLORS["dropdown_item_bg_hover"])])
-
 
 MainMenuOption = DropdownOption
 
@@ -46,7 +23,6 @@ class MainMenuWindow:
     def __init__(self):
         self.window = Tk()
         self.window.title(config.APP_FULL_NAME)
-        self.window.geometry(f"{config.MAIN_MENU_WIDTH}x{config.MAIN_MENU_HEIGHT}")
         apply_theme(self.window)
 
         os_name = platform.system()
@@ -67,13 +43,8 @@ class MainMenuWindow:
         self.window.config(menu=menubar)
         menubar.add_command(
             label="About",
-            command=self.window.destroy,
+            command=self._open_about_window,
         )
-
-        image = Image.open(resource_path("assets/icon.png")).resize((64, 64))
-        self.tk_image = PhotoImage(image)  # 'self' to keep it in memory
-        image_label = Label(self.window, image=self.tk_image, style="Image.TLabel")
-        image_label.pack(pady=20)
 
         dropdowns_frame = Frame(self.window)
         dropdowns_frame.pack(fill=tkinter.X, padx=10, pady=10, side="top")
@@ -208,3 +179,6 @@ class MainMenuWindow:
     def _start_calibration(self):
         if self.calibration_callback is not None:
             self.calibration_callback(CalibrationWindow(self.window))
+
+    def _open_about_window(self):
+        self.about = AboutWindow(self.window)
