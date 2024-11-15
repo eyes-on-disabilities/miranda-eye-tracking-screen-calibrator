@@ -1,6 +1,6 @@
 import platform
 import tkinter
-from tkinter import Canvas, Tk
+from tkinter import Canvas, Menu, Tk
 from tkinter.ttk import Button, Frame, Label, Style
 from typing import Callable
 
@@ -10,7 +10,7 @@ from PIL.ImageTk import PhotoImage
 
 import config
 from guis.tkinter import COLORS
-from guis.tkinter.calibration_gui_window import CalibrationGUI
+from guis.tkinter.calibration_window import CalibrationWindow
 from guis.tkinter.dropdown import Dropdown, DropdownOption
 from misc import Vector, resource_path
 
@@ -18,26 +18,30 @@ from misc import Vector, resource_path
 def apply_theme(root):
     style = Style()
     style.theme_use("clam")
-
+    # standard widgets
     root.config(bg=COLORS["bg"])
     style.configure("TFrame", background=COLORS["bg"])
     style.configure(
-        "TButton", background=COLORS["button_bg"], foreground=COLORS["button_text"], borderwidth=0, padding=15
+        "TButton",
+        background=COLORS["button_bg"],
+        foreground=COLORS["button_text"],
+        borderwidth=0,
+        padding=15,
     )
     style.map("TButton", background=[("active", COLORS["button_bg_hover"])])
     style.configure("TLabel", background=COLORS["label_bg"], foreground=COLORS["label_text"])
+    # custom widgets
     style.configure("Dropdown.TFrame", bordercolor=COLORS["bg"], background=COLORS["dropdown_bg"])
     style.configure("DropdownItem.TFrame", background=COLORS["dropdown_item_bg"])
     style.map("DropdownItem.TFrame", background=[("hover", COLORS["dropdown_item_bg_hover"])])
     style.configure("DropdownItem.TLabel", background=COLORS["dropdown_item_bg"])
     style.map("DropdownItem.TLabel", background=[("hover", COLORS["dropdown_item_bg_hover"])])
-    style.configure("Special.TFrame", background=COLORS["dropdown_item_bg"])
 
 
 MainMenuOption = DropdownOption
 
 
-class MainMenuGUI:
+class MainMenuWindow:
 
     def __init__(self):
         self.window = Tk()
@@ -51,6 +55,20 @@ class MainMenuGUI:
         elif os_name in ("Linux", "Darwin"):  # Darwin is for macOS
             icon_image = Image.open(config.APP_ICON_LINUX)
             self.window.iconphoto(False, PhotoImage(icon_image))
+
+        menubar = Menu(
+            self.window,
+            bg=COLORS["bg"],
+            fg=COLORS["text"],
+            borderwidth=0,
+            activebackground=COLORS["button_bg_hover"],
+            activeforeground=COLORS["text"],
+        )
+        self.window.config(menu=menubar)
+        menubar.add_command(
+            label="About",
+            command=self.window.destroy,
+        )
 
         image = Image.open(resource_path("assets/icon.png")).resize((64, 64))
         self.tk_image = PhotoImage(image)  # 'self' to keep it in memory
@@ -188,6 +206,5 @@ class MainMenuGUI:
         self.window.after(milliseconds, func, *args)
 
     def _start_calibration(self):
-        calibration_gui = CalibrationGUI(self.window)
         if self.calibration_callback is not None:
-            self.calibration_callback(calibration_gui)
+            self.calibration_callback(CalibrationWindow(self.window))

@@ -12,9 +12,9 @@ import calibration
 import config
 from calibration import CalibrationInstruction, CalibrationResult
 from data_sources import data_sources
-from guis.tkinter.calibration_gui_window import (CalibrationGUI,
-                                                 CalibrationGUIButton)
-from guis.tkinter.main_menu_window import MainMenuGUI
+from guis.tkinter.calibration_window import (CalibrationWindow,
+                                             CalibrationWindowButton)
+from guis.tkinter.main_menu_window import MainMenuWindow
 from misc import Vector
 from mouse_movement import MouseMovementType
 from publishers import publishers
@@ -56,8 +56,8 @@ running = True
 calibration_result = None
 temp_calibration_result = None
 
-main_menu_gui = None
-calibration_gui = None
+main_menu_window = None
+calibration_window = None
 in_calibration = False
 
 request_loop_thread = None
@@ -92,13 +92,13 @@ def reload_publisher(publisher_key):
 
 def reload_calibration_result():
     global selected_data_source, selected_tracking_approach, tracking_approach
-    global calibration_result, main_menu_gui, last_mouse_position
+    global calibration_result, main_menu_window, last_mouse_position
     calibration_result = None
     last_mouse_position = [monitor.width / 2, monitor.height / 2]
     if calibration.has_result(selected_data_source, selected_tracking_approach):
         calibration_result = calibration.load_result(selected_data_source, selected_tracking_approach)
         tracking_approach.calibrate(calibration_result)
-    main_menu_gui.set_has_calibration_result(calibration_result is not None)
+    main_menu_window.set_has_calibration_result(calibration_result is not None)
 
 
 def loop():
@@ -106,28 +106,28 @@ def loop():
     while running:
         try:
             last_data_source_vector = data_source.get_next_vector()
-            main_menu_gui.unset_mouse_point()
-            main_menu_gui.set_data_source_has_data(last_data_source_vector is not None)
+            main_menu_window.unset_mouse_point()
+            main_menu_window.set_data_source_has_data(last_data_source_vector is not None)
             if last_data_source_vector is not None and tracking_approach.is_calibrated():
                 mouse_movement = tracking_approach.get_next_mouse_movement(last_data_source_vector)
                 if mouse_movement is not None:
                     last_mouse_position = get_new_mouse_position(mouse_movement, last_mouse_position)
-                    if calibration_gui is not None:
+                    if calibration_window is not None:
                         if not in_calibration:
-                            calibration_gui.set_mouse_point(last_mouse_position)
+                            calibration_window.set_mouse_point(last_mouse_position)
                     else:
-                        main_menu_gui.set_mouse_point(last_mouse_position)
+                        main_menu_window.set_mouse_point(last_mouse_position)
                         publisher.push(last_mouse_position)
         except Exception:
             traceback.print_exc()
         time.sleep(config.LOOP_SLEEP_IN_MILLISEC / 1000)
 
 
-def close_and_unset_calibration_gui():
-    global calibration_gui, in_calibration
+def close_and_unset_calibration_window():
+    global calibration_window, in_calibration
     in_calibration = False
-    calibration_gui.close_window()
-    calibration_gui = None
+    calibration_window.close_window()
+    calibration_window = None
 
 
 def accept_or_reject_temp_calibration_result(accept_temp_calibration_result: bool):
@@ -143,42 +143,42 @@ def accept_or_reject_temp_calibration_result(accept_temp_calibration_result: boo
 
 def redo_calibration():
     if not in_calibration:
-        calibration_gui.unset_buttons()
-        on_calibration_requested(calibration_gui)
+        calibration_window.unset_buttons()
+        on_calibration_requested(calibration_window)
 
 
 def show_final_text_for_seconds(seconds, on_finish):
-    if in_calibration or calibration_gui is None:  # when a calibration started somewhere else or the gui was closed
+    if in_calibration or calibration_window is None:  # when a calibration started somewhere else or the gui was closed
         return
     if seconds == 0:
         on_finish()
     else:
-        calibration_gui.set_main_text(
+        calibration_window.set_main_text(
             "Calibration Done. Do you like this calibration?"
             + "\nEither click or look at the options below."
             + f"\nIf you don't decide, a re-calibration starts in {seconds}"
         )
-        calibration_gui.after(1000, show_final_text_for_seconds, seconds - 1, on_finish)
+        calibration_window.after(1000, show_final_text_for_seconds, seconds - 1, on_finish)
 
 
 def calibration_done():
     global in_calibration
     in_calibration = False
-    calibration_gui.set_buttons(
+    calibration_window.set_buttons(
         [
-            CalibrationGUIButton(
+            CalibrationWindowButton(
                 text="Keep Calibration\n(or press <Enter>)",
-                func=lambda: (close_and_unset_calibration_gui(), accept_or_reject_temp_calibration_result(True)),
+                func=lambda: (close_and_unset_calibration_window(), accept_or_reject_temp_calibration_result(True)),
                 sequence="<Return>",
             ),
-            CalibrationGUIButton(
+            CalibrationWindowButton(
                 text='Redo Calibration\n(or press "r")',
                 func=redo_calibration,
                 sequence="r",
             ),
-            CalibrationGUIButton(
+            CalibrationWindowButton(
                 text="Cancel and Close\n(or press <Escape>)",
-                func=lambda: (close_and_unset_calibration_gui(), accept_or_reject_temp_calibration_result(False)),
+                func=lambda: (close_and_unset_calibration_window(), accept_or_reject_temp_calibration_result(False)),
                 sequence="<Escape>",
             ),
         ]
@@ -186,12 +186,12 @@ def calibration_done():
     show_final_text_for_seconds(config.SHOW_FINAL_CALIBRATION_TEXT_FOR_SEC, redo_calibration)
 
 
-def on_calibration_requested(new_calibration_gui: CalibrationGUI):
-    global calibration_gui, in_calibration
-    calibration_gui = new_calibration_gui
+def on_calibration_requested(new_calibration_window: CalibrationWindow):
+    global calibration_window, in_calibration
+    calibration_window = new_calibration_window
 
     in_calibration = True
-    calibration_gui.unset_mouse_point()
+    calibration_window.unset_mouse_point()
 
     calibration_instructions = tracking_approach.get_calibration_instructions()
     show_preparational_text(
@@ -206,17 +206,17 @@ def show_preparational_text(preparational_text: str, on_finish: Callable, end_ti
         end_time = now + timedelta(seconds=config.SHOW_PREP_CALIBRATION_TEXT_FOR_SEC)
 
     if end_time < now:
-        calibration_gui.unset_main_text()
+        calibration_window.unset_main_text()
         on_finish()
     else:
         remaining_seconds = int((end_time - now).total_seconds())
-        calibration_gui.set_main_text(
+        calibration_window.set_main_text(
             preparational_text
             + "\nYou can close this window by pressing <Escape>."
             + f"\nInstructions come in {remaining_seconds}"
         )
-        calibration_gui.bind("<Escape>", lambda _: close_and_unset_calibration_gui())
-        calibration_gui.after(250, show_preparational_text, preparational_text, on_finish, end_time)
+        calibration_window.bind("<Escape>", lambda _: close_and_unset_calibration_window())
+        calibration_window.after(250, show_preparational_text, preparational_text, on_finish, end_time)
 
 
 def scale_vector_to_screen(vector):
@@ -250,9 +250,9 @@ def execute_calibrations(
     global temp_calibration_result
     next_instruction = next(calibration_instructions, None)
     if next_instruction is None:
-        calibration_gui.unset_calibration_point()
-        calibration_gui.unset_main_text()
-        calibration_gui.unset_image()
+        calibration_window.unset_calibration_point()
+        calibration_window.unset_main_text()
+        calibration_window.unset_image()
         temp_calibration_result = CalibrationResult(collected_vectors)
         tracking_approach.calibrate(temp_calibration_result)
         on_finish()
@@ -264,25 +264,25 @@ def execute_calibrations(
 
 
 def execute_calibration(calibration_instruction: CalibrationInstruction, on_finish: Callable[[Vector], None]):
-    calibration_gui.unset_calibration_point()
-    calibration_gui.unset_main_text()
-    calibration_gui.unset_image()
+    calibration_window.unset_calibration_point()
+    calibration_window.unset_main_text()
+    calibration_window.unset_image()
 
     vector = calibration_instruction.vector
     text = calibration_instruction.text
     image = calibration_instruction.image
 
     if vector is not None:
-        calibration_gui.set_calibration_point(scale_vector_to_screen(vector))
+        calibration_window.set_calibration_point(scale_vector_to_screen(vector))
     if text is not None:
-        calibration_gui.set_main_text(text)
+        calibration_window.set_main_text(text)
     if image is not None:
-        calibration_gui.set_image(image)
+        calibration_window.set_image(image)
 
     end_time = datetime.now() + timedelta(
         seconds=config.WAIT_TIME_BEFORE_COLLECTING_VECTORS_IN_SEC + config.VECTOR_COLLECTION_TIME_IN_SEC
     )
-    calibration_gui.after(
+    calibration_window.after(
         config.WAIT_TIME_BEFORE_COLLECTING_VECTORS_IN_SEC * 1000,
         collect_calibration_vectors,
         calibration_instruction,
@@ -312,13 +312,13 @@ def collect_calibration_vectors(
         remaining_seconds = int((end_time - now).total_seconds())
 
         if vector is not None:
-            calibration_gui.set_calibration_point(scale_vector_to_screen(vector), str(remaining_seconds))
+            calibration_window.set_calibration_point(scale_vector_to_screen(vector), str(remaining_seconds))
         elif text is not None:
-            calibration_gui.set_main_text(text + f" ... {remaining_seconds}")
+            calibration_window.set_main_text(text + f" ... {remaining_seconds}")
         else:
-            calibration_gui.set_main_text(str(remaining_seconds))
+            calibration_window.set_main_text(str(remaining_seconds))
 
-        calibration_gui.after(
+        calibration_window.after(
             config.LOOP_SLEEP_IN_MILLISEC,
             collect_calibration_vectors,
             calibration_instruction,
@@ -328,35 +328,35 @@ def collect_calibration_vectors(
         )
 
 
-main_menu_gui = MainMenuGUI()
+main_menu_window = MainMenuWindow()
 
 reload_data_source(args.data_source)
 reload_tracking_approach(args.tracking_approach)
 reload_publisher(args.publisher)
 reload_calibration_result()
 
-main_menu_gui.set_data_source_options(data_sources)
-main_menu_gui.set_current_data_source(selected_data_source)
-main_menu_gui.on_data_source_change_requested(
+main_menu_window.set_data_source_options(data_sources)
+main_menu_window.set_current_data_source(selected_data_source)
+main_menu_window.on_data_source_change_requested(
     lambda new_data_source: (reload_data_source(new_data_source), reload_calibration_result())
 )
 
-main_menu_gui.set_tracking_approach_options(tracking_approaches)
-main_menu_gui.set_current_tracking_approach(selected_tracking_approach)
-main_menu_gui.on_tracking_approach_change_requested(
+main_menu_window.set_tracking_approach_options(tracking_approaches)
+main_menu_window.set_current_tracking_approach(selected_tracking_approach)
+main_menu_window.on_tracking_approach_change_requested(
     lambda new_tracking_approach: (reload_tracking_approach(new_tracking_approach), reload_calibration_result())
 )
 
-main_menu_gui.set_publisher_options(publishers)
-main_menu_gui.set_current_publisher(selected_publisher)
-main_menu_gui.on_publisher_change_requested(reload_publisher)
+main_menu_window.set_publisher_options(publishers)
+main_menu_window.set_current_publisher(selected_publisher)
+main_menu_window.on_publisher_change_requested(reload_publisher)
 
-main_menu_gui.on_calibration_requested(on_calibration_requested)
+main_menu_window.on_calibration_requested(on_calibration_requested)
 
 request_loop = Thread(target=loop)
 request_loop.start()
 
-main_menu_gui.mainloop()
+main_menu_window.mainloop()
 running = False
 request_loop.join(timeout=1000)
 data_source.stop()

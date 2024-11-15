@@ -11,7 +11,7 @@ from misc import Vector
 from guis.tkinter import COLORS
 
 
-class CalibrationGUIButton:
+class CalibrationWindowButton:
 
     def __init__(self, text: str, func: callable, sequence: str = None):
         self.text = text
@@ -19,7 +19,7 @@ class CalibrationGUIButton:
         self.sequence = sequence
 
 
-class CalibrationGUI:
+class CalibrationWindow:
 
     def __init__(self, root_window):
         self.window = Toplevel(root_window)
@@ -163,7 +163,7 @@ class CalibrationGUI:
                 b.delete()
         self.canvas_buttons = []
 
-    def set_buttons(self, buttons: list[CalibrationGUIButton]):
+    def set_buttons(self, buttons: list[CalibrationWindowButton]):
         self.unset_buttons()
         width_per_option = self.screen_width / len(buttons)
         height_per_option = self.screen_height / 4  # an arbitrary number
