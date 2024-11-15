@@ -35,7 +35,7 @@ class AboutWindow:
         image_label = Label(self.window, image=self.tk_image)
         image_label.pack(pady=30, padx=30)
 
-        Label(self.window, text=config.APP_FULL_NAME).pack()
+        Label(self.window, text=f"{config.APP_FULL_NAME} {config.APP_VERSION}").pack()
         Label(self.window, text=config.APP_DESCRIPTION).pack()
 
         frame = Frame(self.window)
