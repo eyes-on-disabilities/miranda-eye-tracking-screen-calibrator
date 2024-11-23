@@ -14,6 +14,12 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## Build .exe on Windows
+```
+pip install PyInstaller
+PyInstaller .\Miranda.spec
+```
+
 ## Concepts
 
 In short, data comes from a _data source_, this data will be translated into mouse movements using a _tracking approach_, and these mouse movements will be _published_ for further usage. Every data source and tracking approach combination needs a calibration first.
