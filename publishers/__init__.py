@@ -7,14 +7,14 @@ publishers: dict[MainMenuOption] = {
     "udp": MainMenuOption(
         key="udp",
         title="UDP-Publisher",
-        description="Publish the gaze results over\nUDP in a simple JSON format.",
+        description="Publish the gaze results over UDP in a simple JSON format.",
         icon=resource_path("assets/publisher_udp.png"),
         clazz=UdpPublisher,
     ),
     "mouse": MainMenuOption(
         key="mouse",
         title="Mouse Movement",
-        description="Moves the mouse cursor according to the gaze.",
+        description="Moves the mouse cursor according to the gaze.\nDoesn't work with the Mouse data source.",
         icon=resource_path("assets/publisher_mouse.png"),
         clazz=MousePublisher,
     )

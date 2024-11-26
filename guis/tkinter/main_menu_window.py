@@ -23,7 +23,6 @@ class MainMenuWindow:
     def __init__(self):
         self.window = Tk()
         self.window.title(config.APP_FULL_NAME)
-        self.window.geometry("700x400")
         apply_theme(self.window)
 
         os_name = platform.system()
@@ -95,7 +94,7 @@ class MainMenuWindow:
         self.calibration_button.pack(padx=12, pady=12)
 
         monitor = screeninfo.get_monitors()[0]
-        preview_width = 300
+        preview_width = 350
         self.preview_scale = preview_width / monitor.width
         preview_height = self.preview_scale * monitor.height
         self.preview_canvas = Canvas(
