@@ -358,6 +358,6 @@ request_loop.start()
 
 main_menu_window.mainloop()
 running = False
-request_loop.join(timeout=1000)
+request_loop.join(timeout=1)
 data_source.stop()
 publisher.stop()

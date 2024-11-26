@@ -1,7 +1,8 @@
 from data_sources.mouse_data_source import MouseDataSource
 from data_sources.opentrack_data_source import OpentrackDataSource
-from misc import resource_path
+from data_sources.pupil_data_source import PupilDataSource
 from guis.tkinter.main_menu_window import MainMenuOption
+from misc import resource_path
 
 data_sources: dict[MainMenuOption] = {
     "mouse": MainMenuOption(
@@ -17,5 +18,12 @@ data_sources: dict[MainMenuOption] = {
         description="Use the rotation of your\nhead with OpenTrack.",
         icon=resource_path("assets/data_source_opentrack_icon.png"),
         clazz=OpentrackDataSource,
+    ),
+    "pupil": MainMenuOption(
+        key="pupil",
+        title="Pupil",
+        description="Use Pupil's 3d-eye detection..",
+        icon=resource_path("assets/data_source_pupil.png"),
+        clazz=PupilDataSource,
     ),
 }

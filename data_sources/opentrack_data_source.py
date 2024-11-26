@@ -17,5 +17,5 @@ class OpentrackDataSource(DataSource):
         self.opentrack.stop()
 
     def get_next_vector(self) -> Optional[Vector]:
-        head = self.opentrack.get_last_position()
+        head = self.opentrack.get_last_data()
         return (head["yaw"], head["pitch"]) if head is not None else None

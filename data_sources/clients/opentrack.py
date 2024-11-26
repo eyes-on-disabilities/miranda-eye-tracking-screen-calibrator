@@ -5,14 +5,14 @@ import struct
 class Opentrack:
     def __init__(self, ip="127.0.0.1", port=4242, socket_timeout=0.1):
         self.socket = None
-        self.last_position = None
+        self.last_data = None
         self.ip = ip
         self.port = port
         self.socket_timeout = socket_timeout
 
-    def update_last_position(self, new_values):
+    def update_last_data(self, new_values):
         assert len(new_values) == 6
-        self.last_position = {
+        self.last_data = {
             "x": new_values[0],
             "y": new_values[1],
             "z": new_values[2],
@@ -32,15 +32,15 @@ class Opentrack:
     def stop(self):
         self.socket.close()
 
-    def get_last_position(self):
+    def get_last_data(self):
         try:
             data, addr = self.socket.recvfrom(self.buffer_size)
             if len(data) == self.buffer_size:
                 new_values = struct.unpack("6d", data)
-                self.update_last_position(new_values)
+                self.update_last_data(new_values)
             else:
-                self.last_position = None
+                self.last_data = None
         except Exception:
-            self.last_position = None
+            self.last_data = None
         finally:
-            return self.last_position
+            return self.last_data

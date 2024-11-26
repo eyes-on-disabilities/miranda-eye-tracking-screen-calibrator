@@ -23,6 +23,7 @@ class MainMenuWindow:
     def __init__(self):
         self.window = Tk()
         self.window.title(config.APP_FULL_NAME)
+        self.window.geometry("700x400")
         apply_theme(self.window)
 
         os_name = platform.system()
