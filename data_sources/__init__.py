@@ -22,7 +22,7 @@ data_sources: dict[MainMenuOption] = {
     "pupil": MainMenuOption(
         key="pupil",
         title="Pupil",
-        description="Use Pupil's 3d-eye detection..",
+        description="Use Pupil Lab's 3d-eye detection.",
         icon=resource_path("assets/data_source_pupil.png"),
         clazz=PupilDataSource,
     ),
