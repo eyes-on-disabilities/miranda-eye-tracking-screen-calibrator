@@ -42,3 +42,38 @@ _Publishers_ take the mouse movements created by the tracking approach and publi
 # example
 {"x": 173, "y": 432, "timestamp": "2024-11-14 00:56:42.308879"}
 ```
+
+# Open Source License Attribution
+
+This application uses Open Source components. You can find the source code of their open source projects along with license information below. We acknowledge and are grateful to these developers for their contributions to open source.
+
+### [NumPy](https://numpy.org/)
+- Copyright (c) 2005-2025 NumPy Developers
+- [BSD 3-Clause License](https://github.com/numpy/numpy/blob/main/LICENSE.txt)
+
+### [screeninfo](https://github.com/rr-/screeninfo)
+- Copyright (c) 2015 Marcin Kurczewski
+- [MIT License](https://github.com/rr-/screeninfo/blob/master/LICENSE.md)
+
+### [Pillow](https://python-pillow.github.io/)
+#### The Python Imaging Library (PIL) is
+- Copyright (c) 1997-2011 by Secret Labs AB
+- Copyright (c) 1995-2011 by Fredrik Lundh and contributors
+#### Pillow is the friendly PIL fork. It is
+- Copyright (c) 2010 by Jeffrey A. Clark and contributors
+- [MIT-CMU License](https://github.com/python-pillow/Pillow/blob/main/LICENSE)
+
+### [PyAutoGUI](https://github.com/asweigart/pyautogui)
+- Copyright (c) 2014 Al Sweigart
+- [BSD 3-Clause License](https://github.com/asweigart/pyautogui/blob/master/LICENSE.txt)
+
+### [MessagePack for Python](https://msgpack.org/)
+- Copyright (C) 2008-2011 INADA Naoki <songofacandy@gmail.com>
+- [Apache License 2.0](https://github.com/msgpack/msgpack-python/blob/main/COPYING)
+
+### [PyZMQ](https://zguide.zeromq.org/)
+- Copyright (c) 2009-2012, Brian Granger, Min Ragan-Kelley
+- [BSD 3-Clause License](https://github.com/zeromq/pyzmq/blob/main/LICENSE.md)
+
+### [python-osc](https://github.com/attwad/python-osc)
+- [The Unlicense](https://github.com/attwad/python-osc/blob/main/LICENSE.txt)
