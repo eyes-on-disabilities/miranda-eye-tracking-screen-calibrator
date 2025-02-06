@@ -14,6 +14,11 @@ pip install -r requirements.txt
 python main.py
 ```
 
+Alternatively, you may also use [uv](https://docs.astral.sh/uv/getting-started/installation/) to run Miranda:
+```
+uv run --with-requirements requirements.txt main.py [miranda args]
+```
+
 ## Build .exe on Windows
 ```
 pip install PyInstaller
