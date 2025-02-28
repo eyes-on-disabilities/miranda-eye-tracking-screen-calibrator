@@ -35,7 +35,7 @@ class Dropdown:
         self.dropdown_button = Button(self.widget, text=initial_text, compound="left", command=self.toggle_dropdown)
         # since a Frame within a Frame can potentially overflow,
         # we want to position the dropdown frame at the root widget.
-        self.dropdown_frame = Frame(self._find_root_widget(), borderwidth=4, relief="solid")
+        self.dropdown_frame = Frame(self._find_root_widget(), borderwidth=4, relief="solid", style="Dropdown.TFrame")
         self.close_dropdown()
 
     def pack(self, **pack_args):

@@ -15,9 +15,8 @@ class ScrollableFrame:
         self.widget = widget
         self.max_height = max_height
 
-
-        # Create a canvas with COLORS["canvas_bg"]
-        self.my_canvas = Canvas(self.widget, background=COLORS["canvas_bg"])
+        # Create a canvas
+        self.my_canvas = Canvas(self.widget, background=COLORS["dropdown_bg"], highlightthickness=0)
         self.my_canvas.pack(side=LEFT, fill=BOTH, expand=True)
 
         # Add a scrollbar to the canvas
@@ -27,7 +26,7 @@ class ScrollableFrame:
         self.my_canvas.configure(yscrollcommand=self.my_scrollbar.set)
 
         # Create another frame inside the canvas
-        self.second_frame = Frame(self.my_canvas)
+        self.second_frame = Frame(self.my_canvas, style="Dropdown.TFrame")
 
         # Add that new frame to a window in the canvas
         self.window_id = self.my_canvas.create_window((0, 0), window=self.second_frame, anchor="nw")
