@@ -1,8 +1,13 @@
-from tkinter.ttk import Button, Frame, Label
+from tkinter.ttk import Button, Frame, Label, Scrollbar
+from tkinter import Canvas
 from typing import Generic, TypeVar
 
 from PIL import Image
 from PIL.ImageTk import PhotoImage
+from tkinter.constants import VERTICAL
+from tkinter.constants import Y
+from tkinter.constants import LEFT, RIGHT, BOTH
+from guis.tkinter import COLORS
 
 
 T = TypeVar("T")
@@ -19,12 +24,13 @@ class DropdownOption:
 
 class Dropdown:
 
-    def __init__(self, widget, initial_text=""):
+    def __init__(self, widget, initial_text="", max_height=200):
         self.widget = widget
         self.menu_options = []
         self.icons = {}
         self.selection_callback = None
         self.icon_size = 24
+        self.max_height = max_height
 
         self.dropdown_button = Button(self.widget, text=initial_text, compound="left", command=self.toggle_dropdown)
         # since a Frame within a Frame can potentially overflow,
@@ -114,9 +120,28 @@ class Dropdown:
         for widget in self.dropdown_frame.winfo_children():
             widget.destroy()
 
+        # Create a canvas with COLORS["canvas_bg"]
+        my_canvas = Canvas(self.dropdown_frame, background=COLORS["canvas_bg"])
+        my_canvas.pack(side=LEFT, fill=BOTH, expand=True)
+
+        # Add a scrollbar to the canvas
+        my_scrollbar = Scrollbar(self.dropdown_frame, orient=VERTICAL, command=my_canvas.yview)
+
+        # Configure the canvas
+        my_canvas.configure(yscrollcommand=my_scrollbar.set)
+
+        # Create another frame inside the canvas
+        second_frame = Frame(my_canvas)
+
+        # Add that new frame to a window in the canvas
+        window_id = my_canvas.create_window((0, 0), window=second_frame, anchor="nw")
+
+        # Ensure `second_frame` expands to match `Canvas` width dynamically
+        my_canvas.bind("<Configure>", lambda e: my_canvas.itemconfig(window_id, width=e.width))
+
         for key, option in self.menu_options.items():
             item_frame = Frame(
-                self.dropdown_frame,
+                second_frame,
                 style="DropdownItem.TFrame",
             )
             item_frame.pack(fill="x", padx=5, pady=5)
@@ -146,3 +171,34 @@ class Dropdown:
                 # frames and labels don't have a hover state by themselves
                 w.bind("<Enter>", lambda _, w=widges: self._apply_state_to_widgets("hover", w))
                 w.bind("<Leave>", lambda _, w=widges: self._apply_state_to_widgets("!hover", w))
+
+        # Update UI before fetching sizes
+        my_canvas.update_idletasks()
+
+        # Get actual height of second_frame
+        second_frame_height = second_frame.winfo_height()
+
+        # Determine if scrolling is needed
+        if second_frame_height > self.max_height:
+            my_canvas.configure(height=self.max_height)
+            my_scrollbar.pack(side=RIGHT, fill=Y)  # Show scrollbar
+        else:
+            my_canvas.configure(height=second_frame_height)
+            my_scrollbar.pack_forget()  # Hide scrollbar
+
+        # Ensure scrolling works properly
+        my_canvas.configure(scrollregion=my_canvas.bbox("all"))
+
+        # Enable Mouse Scroll
+        def on_mouse_wheel(event):
+            my_canvas.yview_scroll(-1 * (event.delta // 120), "units")  # Windows/macOS
+
+        def on_linux_scroll(event):
+            if event.num == 4:  # Scroll up
+                my_canvas.yview_scroll(-1, "units")
+            elif event.num == 5:  # Scroll down
+                my_canvas.yview_scroll(1, "units")
+
+        my_canvas.bind_all("<MouseWheel>", on_mouse_wheel)  # Windows/macOS
+        my_canvas.bind_all("<Button-4>", on_linux_scroll)   # Linux scroll up
+        my_canvas.bind_all("<Button-5>", on_linux_scroll)   # Linux scroll down
