@@ -1,8 +1,14 @@
-from tkinter.ttk import Button, Frame, Label
+from tkinter.ttk import Button, Frame, Label, Scrollbar
+from tkinter import Canvas
 from typing import Generic, TypeVar
 
 from PIL import Image
 from PIL.ImageTk import PhotoImage
+from tkinter.constants import VERTICAL
+from tkinter.constants import Y
+from tkinter.constants import LEFT, RIGHT, BOTH
+from guis.tkinter import COLORS
+from guis.tkinter.scrollable_frame import ScrollableFrame
 
 
 T = TypeVar("T")
@@ -114,9 +120,11 @@ class Dropdown:
         for widget in self.dropdown_frame.winfo_children():
             widget.destroy()
 
+        scrollable_frame = ScrollableFrame(self.dropdown_frame)
+
         for key, option in self.menu_options.items():
             item_frame = Frame(
-                self.dropdown_frame,
+                scrollable_frame.second_frame,
                 style="DropdownItem.TFrame",
             )
             item_frame.pack(fill="x", padx=5, pady=5)
@@ -146,3 +154,5 @@ class Dropdown:
                 # frames and labels don't have a hover state by themselves
                 w.bind("<Enter>", lambda _, w=widges: self._apply_state_to_widgets("hover", w))
                 w.bind("<Leave>", lambda _, w=widges: self._apply_state_to_widgets("!hover", w))
+
+        scrollable_frame.update()
