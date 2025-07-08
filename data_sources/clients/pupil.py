@@ -26,9 +26,10 @@ class Pupil:
         self.thread.start()
 
     def stop(self):
-        self._running = False
-        if self.thread.is_alive():
-            self.thread.join(timeout=1)
+        if self._running is not False:
+            self._running = False
+            if self.thread.is_alive():
+                self.thread.join(timeout=1)
 
     def get_last_data(self):
         return {
@@ -98,7 +99,6 @@ class Pupil:
                     try_for_seconds=self.timeout,
                 )
                 message = msgpack.loads(payload)
-                print(message)
                 if topic == b"pupil.0.2d":
                     self.last_2d_data = message
                 if topic == b"pupil.0.3d":
