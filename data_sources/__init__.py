@@ -1,5 +1,6 @@
 from data_sources.mouse_data_source import MouseDataSource
 from data_sources.opentrack_data_source import OpentrackDataSource
+from data_sources.orlosky_data_source import OrloskyDataSource
 from data_sources.pupil_data_source import PupilDataSource
 from guis.tkinter.main_menu_window import MainMenuOption
 from misc import resource_path
@@ -41,5 +42,12 @@ data_sources: dict[MainMenuOption] = {
         description="Eye tracking with EyeTrackVR.",
         icon=resource_path("assets/data_source_eyetrackvr.png"),
         clazz=EyeTrackVRDataSource,
+    ),
+    "orlosky": MainMenuOption(
+        key="orlosky",
+        title="Orlosky",
+        description="beep boop",
+        icon=resource_path("assets/data_source_eyetrackvr.png"),
+        clazz=OrloskyDataSource,
     ),
 }
