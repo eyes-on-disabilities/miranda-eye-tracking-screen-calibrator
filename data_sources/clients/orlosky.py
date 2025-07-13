@@ -1,4 +1,3 @@
-import math
 import os
 import threading
 import time
@@ -50,12 +49,8 @@ class Orlosky:
                             parts = [float(p) for p in line.split(",")]
                             if len(parts) >= 6:
                                 x, y, z = parts[3], parts[4], parts[5]
-                                theta = math.acos(z)
-                                phi = math.atan2(y, x)
-                                theta_deg = math.degrees(theta)
-                                phi_deg = math.degrees(phi)
                                 with self._data_lock:
-                                    self._latest_data = {"theta": theta_deg, "phi": phi_deg}
+                                    self._latest_data = {"x": x, "y": y, "z": z}
             except Exception:
                 pass
             time.sleep(0.05)

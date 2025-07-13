@@ -17,4 +17,14 @@ class OrloskyDataSource(DataSource):
 
     def get_next_vector(self) -> Optional[Vector]:
         last_data = self.orlosky.get_last_data()
-        return (last_data["theta"], last_data["phi"]) if last_data else None
+        if not last_data:
+            return None
+
+        x = last_data["x"]
+        y = last_data["y"]
+        z = last_data["z"]
+
+        if z == 0:
+            return None  # Avoid division by zero
+
+        return (x / z, y / z)
