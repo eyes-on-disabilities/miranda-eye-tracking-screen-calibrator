@@ -168,3 +168,4 @@ cython_debug/
 
 # miranda
 .calibration_results/
+.orlosky_tracker_path

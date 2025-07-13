@@ -8,19 +8,19 @@ from data_sources.eyetrackvr_data_source import EyeTrackVRDataSource
 from data_sources.opentrack_and_pupil_data_source import OpentrackAndPupilDataSource
 
 data_sources: dict[MainMenuOption] = {
-    "opentrack_and_pupil": MainMenuOption(
-        key="opentrack_and_pupil",
-        title="OpenTrack and Pupil",
-        description="Test.",
-        icon=resource_path("assets/data_source_opentrack.png"),
-        clazz=OpentrackAndPupilDataSource,
-    ),
     "mouse": MainMenuOption(
         key="mouse",
         title="Mouse Position",
         description="The mouse position as input. Great for testing.",
         icon=resource_path("assets/data_source_mouse.png"),
         clazz=MouseDataSource,
+    ),
+    "orlosky": MainMenuOption(
+        key="orlosky",
+        title="Orlosky",
+        description="The 3DEyeTracker from Jason Orlosky.",
+        icon=resource_path("assets/data_source_orlosky.png"),
+        clazz=OrloskyDataSource,
     ),
     "opentrack": MainMenuOption(
         key="opentrack",
@@ -42,12 +42,5 @@ data_sources: dict[MainMenuOption] = {
         description="Eye tracking with EyeTrackVR.",
         icon=resource_path("assets/data_source_eyetrackvr.png"),
         clazz=EyeTrackVRDataSource,
-    ),
-    "orlosky": MainMenuOption(
-        key="orlosky",
-        title="Orlosky",
-        description="beep boop",
-        icon=resource_path("assets/data_source_eyetrackvr.png"),
-        clazz=OrloskyDataSource,
     ),
 }
