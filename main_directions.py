@@ -1,14 +1,26 @@
 import tkinter as tk
 from tkinter import messagebox
 from threading import Thread, Event
+from queue import Queue
 from typing import Optional
 import time
 import math
+import numpy as np
+import sounddevice as sd
 from misc import Vector
 from data_sources.orlosky_data_source import OrloskyDataSource
 
+# Configuration
+THRESHOLD = 5
+STEP_TIMEOUT = 2.0            # Seconds to perform next step
+NOTE_DURATION = 0.5           # Seconds for normal choreography note
+SUCCESS_WAIT = 0.25            # Seconds pause before success sequence
+SUCCESS_NOTE_DURATION = 0.25   # Seconds per note in success sequence
+
+# Notes: C4, E4, G4, C5
+CHOREO_NOTES = [261.63, 329.63, 392.00, 523.25]
+
 DIRECTIONS = ["left", "right", "up", "down", "center"]
-THRESHOLD = 5  # Adjust as needed
 
 class EyeTrackerApp:
     def __init__(self, root, datasource):
@@ -30,6 +42,16 @@ class EyeTrackerApp:
         self.poll_thread = Thread(target=self.poll_data)
         self.poll_thread.daemon = True
 
+        self.sound_queue = Queue()
+        self.sound_thread = Thread(target=self.sound_loop)
+        self.sound_thread.daemon = True
+        self.sound_thread.start()
+
+        self.choreography_mode = True
+        self.choreography_steps = ["left", "up", "right", "down"]
+        self.choreography_index = 0
+        self.last_step_time = None
+
     def create_ui(self):
         positions = {
             "up": (150, 50),
@@ -45,7 +67,6 @@ class EyeTrackerApp:
 
     def start_calibration(self):
         self.running.clear()
-
         self.root.withdraw()
         for direction in DIRECTIONS:
             self.calibrate_direction(direction)
@@ -82,7 +103,10 @@ class EyeTrackerApp:
             vec = self.datasource.get_next_vector()
             if vec:
                 match = self.match_direction(vec)
-                self.update_boxes(match)
+                if self.choreography_mode:
+                    self.handle_choreography(match)
+                else:
+                    self.update_boxes(match)
             time.sleep(0.05)
 
     def update_boxes(self, active):
@@ -107,6 +131,56 @@ class EyeTrackerApp:
 
         return min_dir if min_dist <= THRESHOLD else None
 
+    def play_note(self, freq, duration):
+        self.sound_queue.put(("note", freq, duration))
+
+    def play_success_sequence(self):
+        self.sound_queue.put(("success",))
+
+    def sound_loop(self):
+        sample_rate = 44100
+        while True:
+            task = self.sound_queue.get()
+            if task[0] == "note":
+                _, freq, duration = task
+                t = np.linspace(0, duration, int(sample_rate * duration), False)
+                wave = 0.5 * np.sin(2 * np.pi * freq * t)
+                sd.play(wave, samplerate=sample_rate, blocking=True)
+            elif task[0] == "success":
+                time.sleep(SUCCESS_WAIT)
+                for freq in CHOREO_NOTES:
+                    t = np.linspace(0, SUCCESS_NOTE_DURATION, int(sample_rate * SUCCESS_NOTE_DURATION), False)
+                    wave = 0.5 * np.sin(2 * np.pi * freq * t)
+                    sd.play(wave, samplerate=sample_rate, blocking=True)
+
+    def handle_choreography(self, match):
+        if match is None:
+            return
+
+        current_time = time.time()
+
+        if self.choreography_index == 0:
+            if match == self.choreography_steps[0]:
+                self.choreography_index = 1
+                self.last_step_time = current_time
+                self.play_note(CHOREO_NOTES[0], NOTE_DURATION)
+        else:
+            if match == self.choreography_steps[self.choreography_index]:
+                self.play_note(CHOREO_NOTES[self.choreography_index], NOTE_DURATION)
+                self.choreography_index += 1
+                self.last_step_time = current_time
+
+                if self.choreography_index == len(self.choreography_steps):
+                    print("done")
+                    self.play_success_sequence()
+                    self.choreography_index = 0
+                    self.last_step_time = None
+            elif current_time - self.last_step_time > STEP_TIMEOUT:
+                self.choreography_index = 0
+                self.last_step_time = None
+
+        self.update_boxes(match)
+
 if __name__ == '__main__':
     root = tk.Tk()
     datasource = OrloskyDataSource()
@@ -114,3 +188,4 @@ if __name__ == '__main__':
     app = EyeTrackerApp(root, datasource)
     root.mainloop()
     datasource.stop()
+
