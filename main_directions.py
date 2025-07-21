@@ -4,18 +4,18 @@ from threading import Thread, Event
 from typing import Optional
 import time
 import math
-from misc import Vector  # Assumed to be something like: class Vector: def __init__(self, x: float, y: float): ...
-from data_sources.pupil_data_source import PupilDataSource  # Implement this with DataSource interface
+from misc import Vector
+from data_sources.orlosky_data_source import OrloskyDataSource
 
 DIRECTIONS = ["left", "right", "up", "down", "center"]
 THRESHOLD = 5  # Adjust as needed
 
 class EyeTrackerApp:
-    def __init__(self, root):
+    def __init__(self, root, datasource):
         self.root = root
         self.root.title("Eye Tracker")
         self.calibration_data = {}
-        self.datasource = PupilDataSource()
+        self.datasource = datasource
         self.running = Event()
 
         self.canvas = tk.Canvas(root, width=400, height=400)
@@ -45,8 +45,6 @@ class EyeTrackerApp:
 
     def start_calibration(self):
         self.running.clear()
-        self.datasource.stop()
-        self.datasource.start()
 
         self.root.withdraw()
         for direction in DIRECTIONS:
@@ -111,5 +109,8 @@ class EyeTrackerApp:
 
 if __name__ == '__main__':
     root = tk.Tk()
-    app = EyeTrackerApp(root)
+    datasource = OrloskyDataSource()
+    datasource.start()
+    app = EyeTrackerApp(root, datasource)
     root.mainloop()
+    datasource.stop()
