@@ -19,9 +19,11 @@ SUCCESS_WAIT = 0.0
 CHOREO_NOTES = [261.63, 329.63, 392.00, 523.25]
 DIRECTIONS = ["left", "right", "up", "down", "center"]
 TRIGGER_SOUND = "assets/trigger_sound.wav"
+BG_FLASH_FACTOR = 1
 
 # --- Animation controls ---
 FADE_STEPS = 12           # frames for box color fade-out
+BG_FADE_STEPS = 120        # frames for box color fade-out
 FADE_INTERVAL_MS = 16     # ms per fade frame
 GLOW_STEPS = 14           # frames for glow fade
 GLOW_INTERVAL_MS = 16     # ms per glow frame
@@ -48,6 +50,17 @@ def _rgb_to_hex(rgb):
     return '#%02x%02x%02x' % rgb
 
 
+def _blend_hex(base_hex: str, target_hex: str, alpha: float) -> str:
+    br, bg, bb = _hex_to_rgb(base_hex)
+    tr, tg, tb = _hex_to_rgb(target_hex)
+    mix = (
+        int(br + (tr - br) * alpha),
+        int(bg + (tg - bg) * alpha),
+        int(bb + (tb - bb) * alpha),
+    )
+    return _rgb_to_hex(mix)
+
+
 class EyeTrackerApp:
     def __init__(self, root, datasource):
         self.root = root
@@ -72,6 +85,7 @@ class EyeTrackerApp:
         self.glows = {}
         self.fade_jobs = {}
         self.glow_jobs = {}
+        self.bg_fade_job = None
         self.create_ui()
 
         self.calibrate_button = tk.Button(
@@ -262,6 +276,39 @@ class EyeTrackerApp:
         self.canvas.itemconfig(glow, width=GLOW_MAX_OUTLINE)
         step()
 
+    def _start_bg_fade(self, start_hex: str, end_hex: str):
+        # cancel existing bg fade
+        if self.bg_fade_job is not None:
+            self.root.after_cancel(self.bg_fade_job)
+            self.bg_fade_job = None
+        start_rgb = _hex_to_rgb(start_hex)
+        end_rgb = _hex_to_rgb(end_hex)
+
+        def step(i: int = 0):
+            if i >= BG_FADE_STEPS:
+                self.canvas.configure(bg=end_hex)
+                self.root.configure(bg=end_hex)
+                self.bg_fade_job = None
+                return
+            t = i / float(BG_FADE_STEPS)
+            rgb = tuple(int(start_rgb[k] + (end_rgb[k] - start_rgb[k]) * t) for k in range(3))
+            hexcol = _rgb_to_hex(rgb)
+            self.canvas.configure(bg=hexcol)
+            self.root.configure(bg=hexcol)
+            self.bg_fade_job = self.root.after(FADE_INTERVAL_MS, step, i + 1)
+
+        step()
+
+
+    def trigger_bg_flash(self):
+        base = MATERIAL_COLORS["background"]
+        active = MATERIAL_COLORS["box_active"]
+        flash = _blend_hex(base, active, BG_FLASH_FACTOR)
+        # set to flash immediately, then fade back
+        self.canvas.configure(bg=flash)
+        self.root.configure(bg=flash)
+        self._start_bg_fade(flash, base)
+
     def match_direction(self, vec: Vector) -> Optional[str]:
         if not self.calibration_data:
             return None
@@ -324,6 +371,7 @@ class EyeTrackerApp:
                     self.play_success_sequence()
                     self.choreography_index = 0
                     self.last_step_time = None
+                    self.trigger_bg_flash()
             elif current_time - self.last_step_time > STEP_TIMEOUT:
                 self.choreography_index = 0
                 self.last_step_time = None
