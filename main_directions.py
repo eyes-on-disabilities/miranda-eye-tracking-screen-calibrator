@@ -7,16 +7,17 @@ import time
 import math
 import numpy as np
 import sounddevice as sd
+import soundfile as sf
 from misc import Vector
-from data_sources.orlosky_data_source import OrloskyDataSource
+from data_sources.mouse_data_source import MouseDataSource
 
-THRESHOLD = 5
+THRESHOLD = 250
 STEP_TIMEOUT = 2.0
 NOTE_DURATION = 0.25
-SUCCESS_WAIT = 0.25
-SUCCESS_NOTE_DURATION = 0.1
+SUCCESS_WAIT = 0.0
 CHOREO_NOTES = [261.63, 329.63, 392.00, 523.25]
 DIRECTIONS = ["left", "right", "up", "down", "center"]
+TRIGGER_SOUND = "assets/trigger_sound.wav"
 
 MATERIAL_COLORS = {
     "background": "#121212",
@@ -172,10 +173,8 @@ class EyeTrackerApp:
                 sd.play(wave, samplerate=sample_rate, blocking=True)
             elif task[0] == "success":
                 time.sleep(SUCCESS_WAIT)
-                for freq in CHOREO_NOTES:
-                    t = np.linspace(0, SUCCESS_NOTE_DURATION, int(sample_rate * SUCCESS_NOTE_DURATION), False)
-                    wave = 0.5 * np.sin(2 * np.pi * freq * t)
-                    sd.play(wave, samplerate=sample_rate, blocking=True)
+                data, fs = sf.read(TRIGGER_SOUND, dtype="float32")
+                sd.play(data, samplerate=fs, blocking=True)
 
     def handle_choreography(self, match):
         if match is None:
@@ -206,9 +205,8 @@ class EyeTrackerApp:
 
 if __name__ == '__main__':
     root = tk.Tk()
-    datasource = OrloskyDataSource()
+    datasource = MouseDataSource()
     datasource.start()
     app = EyeTrackerApp(root, datasource)
     root.mainloop()
     datasource.stop()
-
