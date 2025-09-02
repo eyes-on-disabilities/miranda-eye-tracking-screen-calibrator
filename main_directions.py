@@ -23,12 +23,8 @@ BG_FLASH_FACTOR = 1
 
 # --- Animation controls ---
 FADE_STEPS = 12           # frames for box color fade-out
-BG_FADE_STEPS = 120        # frames for box color fade-out
+BG_FADE_STEPS = 120       # frames for background fade-out
 FADE_INTERVAL_MS = 16     # ms per fade frame
-GLOW_STEPS = 14           # frames for glow fade
-GLOW_INTERVAL_MS = 16     # ms per glow frame
-GLOW_MAX_OUTLINE = 28     # starting outline width for glow
-GLOW_PAD = 12             # padding around box for glow rect
 
 MATERIAL_COLORS = {
     "background": "#121212",
@@ -82,9 +78,7 @@ class EyeTrackerApp:
         self.canvas.pack(fill="both", expand=True)
 
         self.boxes = {}
-        self.glows = {}
         self.fade_jobs = {}
-        self.glow_jobs = {}
         self.bg_fade_job = None
         self.create_ui()
 
@@ -118,9 +112,6 @@ class EyeTrackerApp:
         margin = 16
         bottom_reserve = 140  # leave room for calibrate button
 
-        # Layout:
-        # - LEFT and RIGHT: tall side panels filling height
-        # - UP and DOWN: centered column, stacked
         left_x1, left_y1 = margin, margin
         left_x2, left_y2 = w * 0.22, h - bottom_reserve - margin
 
@@ -129,7 +120,6 @@ class EyeTrackerApp:
 
         center_x1 = left_x2 + margin
         center_x2 = right_x1 - margin
-        center_width = max(1, center_x2 - center_x1)
 
         center_top_y1 = margin
         center_top_y2 = (h - bottom_reserve - 2 * margin) / 2
@@ -144,18 +134,6 @@ class EyeTrackerApp:
         }
 
         for direction, (x1, y1, x2, y2) in layout.items():
-            # Glow rectangle under the box
-            glow = self.canvas.create_rectangle(
-                x1 - GLOW_PAD,
-                y1 - GLOW_PAD,
-                x2 + GLOW_PAD,
-                y2 + GLOW_PAD,
-                outline=MATERIAL_COLORS["highlight"],
-                width=0,
-                fill="",
-            )
-
-            # Main box
             box = self.canvas.create_rectangle(
                 x1,
                 y1,
@@ -173,7 +151,6 @@ class EyeTrackerApp:
                 font=("Helvetica", 48, "bold"),
             )
 
-            self.glows[direction] = glow
             self.boxes[direction] = box
 
     def start_calibration(self):
@@ -234,13 +211,11 @@ class EyeTrackerApp:
         # Active box gets immediate active color. Others fade to default.
         for direction, box in self.boxes.items():
             if active is not None and direction == active:
-                # cancel any fade on this box
                 job = self.fade_jobs.pop(direction, None)
                 if job:
                     self.root.after_cancel(job)
                 self.canvas.itemconfig(box, fill=MATERIAL_COLORS["box_active"]) 
             else:
-                # fade current color to default
                 current = self.canvas.itemcget(box, "fill")
                 if not current or current[0] != '#':
                     current = MATERIAL_COLORS["box_default"]
@@ -249,7 +224,6 @@ class EyeTrackerApp:
                     self._start_fade(direction, current, target)
 
     def _start_fade(self, direction: str, start_hex: str, end_hex: str):
-        # cancel existing fade
         job = self.fade_jobs.pop(direction, None)
         if job:
             self.root.after_cancel(job)
@@ -271,31 +245,7 @@ class EyeTrackerApp:
 
         step()
 
-    def _start_glow(self, direction: str):
-        # cancel existing glow
-        job = self.glow_jobs.pop(direction, None)
-        if job:
-            self.root.after_cancel(job)
-        glow = self.glows[direction]
-        # ensure glow rectangle surrounds the box
-        x1, y1, x2, y2 = self.canvas.coords(self.boxes[direction])
-        self.canvas.coords(glow, x1 - GLOW_PAD, y1 - GLOW_PAD, x2 + GLOW_PAD, y2 + GLOW_PAD)
-
-        def step(i: int = 0):
-            if i >= GLOW_STEPS:
-                self.canvas.itemconfig(glow, width=0)
-                self.glow_jobs.pop(direction, None)
-                return
-            width = int(GLOW_MAX_OUTLINE * (1.0 - i / float(GLOW_STEPS)))
-            self.canvas.itemconfig(glow, width=width)
-            self.glow_jobs[direction] = self.root.after(GLOW_INTERVAL_MS, step, i + 1)
-
-        # start from max width
-        self.canvas.itemconfig(glow, width=GLOW_MAX_OUTLINE)
-        step()
-
     def _start_bg_fade(self, start_hex: str, end_hex: str):
-        # cancel existing bg fade
         if self.bg_fade_job is not None:
             self.root.after_cancel(self.bg_fade_job)
             self.bg_fade_job = None
@@ -317,12 +267,10 @@ class EyeTrackerApp:
 
         step()
 
-
     def trigger_bg_flash(self):
         base = MATERIAL_COLORS["background"]
         active = MATERIAL_COLORS["box_active"]
         flash = _blend_hex(base, active, BG_FLASH_FACTOR)
-        # set to flash immediately, then fade back
         self.canvas.configure(bg=flash)
         self.root.configure(bg=flash)
         self._start_bg_fade(flash, base)
@@ -365,7 +313,6 @@ class EyeTrackerApp:
                 sd.play(data, samplerate=fs, blocking=True)
 
     def handle_choreography(self, match):
-        # Always update visuals so fades happen even on no match
         if match is None:
             self.update_boxes(None)
             return
@@ -377,11 +324,9 @@ class EyeTrackerApp:
                 self.choreography_index = 1
                 self.last_step_time = current_time
                 self.play_note(CHOREO_NOTES[0], NOTE_DURATION)
-                self._start_glow(match)
         else:
             if match == self.choreography_steps[self.choreography_index]:
                 self.play_note(CHOREO_NOTES[self.choreography_index], NOTE_DURATION)
-                self._start_glow(match)
                 self.choreography_index += 1
                 self.last_step_time = current_time
 
