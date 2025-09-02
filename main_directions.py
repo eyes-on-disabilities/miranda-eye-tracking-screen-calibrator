@@ -17,7 +17,7 @@ STEP_TIMEOUT = 2.0
 NOTE_DURATION = 0.25
 SUCCESS_WAIT = 0.0
 CHOREO_NOTES = [261.63, 329.63, 392.00, 523.25]
-DIRECTIONS = ["left", "right", "up", "down", "center"]
+DIRECTIONS = ["left", "right", "up", "down"]
 TRIGGER_SOUND = "assets/trigger_sound.wav"
 BG_FLASH_FACTOR = 1
 
@@ -115,23 +115,41 @@ class EyeTrackerApp:
 
     def create_ui(self):
         w, h = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
-        box_size = min(w, h) // 6
+        margin = 16
+        bottom_reserve = 140  # leave room for calibrate button
 
-        positions = {
-            "up": (w/2 - box_size/2, h/4 - box_size/2),
-            "down": (w/2 - box_size/2, 3*h/4 - box_size/2),
-            "left": (w/4 - box_size/2, h/2 - box_size/2),
-            "right": (3*w/4 - box_size/2, h/2 - box_size/2),
-            "center": (w/2 - box_size/2, h/2 - box_size/2),
+        # Layout:
+        # - LEFT and RIGHT: tall side panels filling height
+        # - UP and DOWN: centered column, stacked
+        left_x1, left_y1 = margin, margin
+        left_x2, left_y2 = w * 0.22, h - bottom_reserve - margin
+
+        right_x1, right_y1 = w * 0.78, margin
+        right_x2, right_y2 = w - margin, h - bottom_reserve - margin
+
+        center_x1 = left_x2 + margin
+        center_x2 = right_x1 - margin
+        center_width = max(1, center_x2 - center_x1)
+
+        center_top_y1 = margin
+        center_top_y2 = (h - bottom_reserve - 2 * margin) / 2
+        center_bottom_y1 = center_top_y2 + margin
+        center_bottom_y2 = h - bottom_reserve - margin
+
+        layout = {
+            "left": (left_x1, left_y1, left_x2, left_y2),
+            "right": (right_x1, right_y1, right_x2, right_y2),
+            "up": (center_x1, center_top_y1, center_x2, center_top_y2),
+            "down": (center_x1, center_bottom_y1, center_x2, center_bottom_y2),
         }
 
-        for direction, (x, y) in positions.items():
+        for direction, (x1, y1, x2, y2) in layout.items():
             # Glow rectangle under the box
             glow = self.canvas.create_rectangle(
-                x - GLOW_PAD,
-                y - GLOW_PAD,
-                x + box_size + GLOW_PAD,
-                y + box_size + GLOW_PAD,
+                x1 - GLOW_PAD,
+                y1 - GLOW_PAD,
+                x2 + GLOW_PAD,
+                y2 + GLOW_PAD,
                 outline=MATERIAL_COLORS["highlight"],
                 width=0,
                 fill="",
@@ -139,20 +157,20 @@ class EyeTrackerApp:
 
             # Main box
             box = self.canvas.create_rectangle(
-                x,
-                y,
-                x + box_size,
-                y + box_size,
+                x1,
+                y1,
+                x2,
+                y2,
                 fill=MATERIAL_COLORS["box_default"],
                 outline="",
             )
 
             self.canvas.create_text(
-                x + box_size/2,
-                y + box_size/2,
+                (x1 + x2) / 2,
+                (y1 + y2) / 2,
                 text=direction.upper(),
                 fill=MATERIAL_COLORS["text"],
-                font=("Helvetica", 28, "bold"),
+                font=("Helvetica", 48, "bold"),
             )
 
             self.glows[direction] = glow
