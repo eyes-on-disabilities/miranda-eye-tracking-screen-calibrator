@@ -5,6 +5,7 @@ from queue import Queue
 from typing import Optional
 import time
 import math
+import serial
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
@@ -61,7 +62,7 @@ class EyeTrackerApp:
         self.root = root
         self.datasource = datasource
         self.running = Event()
-        self.calibration_data = {}
+        self.calibration_x = {}  # store x-only thresholds for left/right
 
         self.root.title("Eye Tracker")
         self.root.configure(bg=MATERIAL_COLORS["background"])
@@ -179,7 +180,7 @@ class EyeTrackerApp:
         def on_enter(_event):
             vec = self.datasource.get_next_vector()
             if vec:
-                self.calibration_data[direction] = vec
+                self.calibration_x[direction] = vec[0]
                 win.destroy()
             else:
                 messagebox.showerror("Error", "No vector received. Try again.")
@@ -323,22 +324,38 @@ class EyeTrackerApp:
 
     # ---------- Direction match ----------
     def match_direction(self, vec: Optional[Vector]) -> Optional[str]:
-        if not vec or not self.calibration_data:
+        if vec is None:
             return None
+        if not ("left" in self.calibration_x and "right" in self.calibration_x):
+            return None
+        try:
+            x = vec[0]
+        except Exception:
+            x = float(vec.x) if hasattr(vec, 'x') else None
+        if x is None:
+            return None
+        lx = self.calibration_x["left"]
+        rx = self.calibration_x["right"]
+        if lx < rx:
+            if x <= lx:
+                return "left"
+            if x >= rx:
+                return "right"
+        else:
+            if x >= lx:
+                return "left"
+            if x <= rx:
+                return "right"
+        return None
 
-        def distance(v1: Vector, v2: Vector) -> float:
-            return math.sqrt((v1[0] - v2[0]) ** 2 + (v1[1] - v2[1]) ** 2)
+    def toggle(self):
+        ser = serial.Serial("/dev/ttyUSB0", 115200)
+        ser.write(b"a")
 
-        min_dir = None
-        min_dist = float('inf')
-        for direction, ref_vec in self.calibration_data.items():
-            dist = distance(vec, ref_vec)
-            if dist < min_dist:
-                min_dist = dist
-                min_dir = direction
-
-        print("match", min_dist)
-        return min_dir if min_dist <= THRESHOLD else None
+    def ingegret(self):
+        self.toggle()
+        time.sleep(3.0)
+        self.toggle()
 
     # ---------- Audio ----------
     def play_wav(self, path: str):
@@ -362,6 +379,8 @@ class EyeTrackerApp:
                 data, fs = self._get_audio(path)
                 if data is not None:
                     sd.play(data, samplerate=fs, blocking=True)
+                    if path == "assets/sounds/trigger_sound_2.wav":
+                        self.ingegret()
 
     def _get_audio(self, path: str):
         if path in self.audio_cache:
@@ -378,6 +397,6 @@ if __name__ == '__main__':
     root = tk.Tk()
     datasource.start()
     app = EyeTrackerApp(root, datasource)
+    root.bind('<Escape>', lambda e: root.destroy())
     root.mainloop()
     datasource.stop()
-
