@@ -15,20 +15,18 @@ from data_sources.orlosky_data_source import OrloskyDataSource
 # datasource = MouseDataSource()
 # THRESHOLD = 250                     # distance threshold for direction match
 datasource = OrloskyDataSource()
-THRESHOLD = .1                     # distance threshold for direction match
+THRESHOLD = .2                     # distance threshold for direction match
 
 # --- Tuning ---
 DWELL_SECONDS = 3.0                 # gaze time needed to trigger final sound
 LOOKAWAY_RESET_SECONDS = 0.8        # time looking away to reset dwell
 NOTE_DURATION = 0.25
 SUCCESS_WAIT = 0.0
-DIRECTIONS = ["left", "right", "up", "down"]
+DIRECTIONS = ["left", "right"]
 
 # --- Sounds ---
 TICK_SOUND = "assets/sounds/tick.wav"
 FINAL_SOUNDS = {
-    "up": "assets/sounds/ja.wav",
-    "down": "assets/sounds/nein.wav",
     "right": "assets/sounds/trigger_sound_2.wav",
     "left": "assets/sounds/joke_001.wav",
 }
@@ -134,11 +132,9 @@ class EyeTrackerApp:
         layout = {
             "left": (left_x1, left_y1, left_x2, left_y2),
             "right": (right_x1, right_y1, right_x2, right_y2),
-            "up": (center_x1, center_top_y1, center_x2, center_top_y2),
-            "down": (center_x1, center_bottom_y1, center_x2, center_bottom_y2),
         }
 
-        labels = {"up": "Ja", "down": "Nein", "right": "Pers", "left": "Joke"}
+        labels = {"right": "Pers", "left": "Joke"}
 
         for direction, (x1, y1, x2, y2) in layout.items():
             box = self.canvas.create_rectangle(
