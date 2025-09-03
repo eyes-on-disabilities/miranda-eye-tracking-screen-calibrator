@@ -10,16 +10,28 @@ import sounddevice as sd
 import soundfile as sf
 from misc import Vector
 from data_sources.mouse_data_source import MouseDataSource
+from data_sources.orlosky_data_source import OrloskyDataSource
+
+# datasource = MouseDataSource()
+# THRESHOLD = 250                     # distance threshold for direction match
+datasource = OrloskyDataSource()
+THRESHOLD = .1                     # distance threshold for direction match
 
 # --- Tuning ---
-THRESHOLD = 250
-STEP_TIMEOUT = 2.0
+DWELL_SECONDS = 3.0                 # gaze time needed to trigger final sound
+LOOKAWAY_RESET_SECONDS = 0.8        # time looking away to reset dwell
 NOTE_DURATION = 0.25
 SUCCESS_WAIT = 0.0
-CHOREO_NOTES = [261.63, 329.63, 392.00, 523.25]
 DIRECTIONS = ["left", "right", "up", "down"]
-TRIGGER_SOUND = "assets/trigger_sound.wav"
-BG_FLASH_FACTOR = 1
+
+# --- Sounds ---
+TICK_SOUND = "assets/sounds/tick.wav"
+FINAL_SOUNDS = {
+    "up": "assets/sounds/ja.wav",
+    "down": "assets/sounds/nein.wav",
+    "right": "assets/sounds/trigger_sound_2.wav",
+    "left": "assets/sounds/joke_001.wav",
+}
 
 # --- Animation controls ---
 FADE_STEPS = 12           # frames for box color fade-out
@@ -46,17 +58,6 @@ def _rgb_to_hex(rgb):
     return '#%02x%02x%02x' % rgb
 
 
-def _blend_hex(base_hex: str, target_hex: str, alpha: float) -> str:
-    br, bg, bb = _hex_to_rgb(base_hex)
-    tr, tg, tb = _hex_to_rgb(target_hex)
-    mix = (
-        int(br + (tr - br) * alpha),
-        int(bg + (tg - bg) * alpha),
-        int(bb + (tb - bb) * alpha),
-    )
-    return _rgb_to_hex(mix)
-
-
 class EyeTrackerApp:
     def __init__(self, root, datasource):
         self.root = root
@@ -78,6 +79,7 @@ class EyeTrackerApp:
         self.canvas.pack(fill="both", expand=True)
 
         self.boxes = {}
+        self.text_ids = {}
         self.fade_jobs = {}
         self.bg_fade_job = None
         self.create_ui()
@@ -97,15 +99,18 @@ class EyeTrackerApp:
         )
         self.calibrate_button.place(relx=0.5, rely=0.9, anchor="center")
 
+        # Audio
         self.poll_thread = Thread(target=self.poll_data, daemon=True)
         self.sound_queue = Queue()
         self.sound_thread = Thread(target=self.sound_loop, daemon=True)
         self.sound_thread.start()
+        self.audio_cache = {}  # path -> (data, fs)
 
-        self.choreography_mode = True
-        self.choreography_steps = ["left", "up", "right", "down"]
-        self.choreography_index = 0
-        self.last_step_time = None
+        # Dwell state
+        self.current_target: Optional[str] = None
+        self.dwell_start_time: Optional[float] = None
+        self.last_tick_second: Optional[int] = None
+        self.last_seen_time: Optional[float] = None
 
     def create_ui(self):
         w, h = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
@@ -133,25 +138,23 @@ class EyeTrackerApp:
             "down": (center_x1, center_bottom_y1, center_x2, center_bottom_y2),
         }
 
+        labels = {"up": "Ja", "down": "Nein", "right": "Pers", "left": "Joke"}
+
         for direction, (x1, y1, x2, y2) in layout.items():
             box = self.canvas.create_rectangle(
-                x1,
-                y1,
-                x2,
-                y2,
+                x1, y1, x2, y2,
                 fill=MATERIAL_COLORS["box_default"],
                 outline="",
             )
-
-            self.canvas.create_text(
+            txt = self.canvas.create_text(
                 (x1 + x2) / 2,
                 (y1 + y2) / 2,
-                text=direction.upper(),
+                text=labels[direction],
                 fill=MATERIAL_COLORS["text"],
                 font=("Helvetica", 48, "bold"),
             )
-
             self.boxes[direction] = box
+            self.text_ids[direction] = txt
 
     def start_calibration(self):
         self.running.clear()
@@ -196,25 +199,73 @@ class EyeTrackerApp:
                 continue
 
             vec = self.datasource.get_next_vector()
-            if vec:
-                match = self.match_direction(vec)
-                if self.choreography_mode:
-                    self.handle_choreography(match)
-                else:
-                    self.update_boxes(match)
-            else:
-                # no vector -> fade everything
-                self.update_boxes(None)
+            match = self.match_direction(vec) if vec else None
+            self.update_dwell(match)
+            self.update_boxes(match)
             time.sleep(0.05)
 
+    # ---------- Dwell logic ----------
+    def update_dwell(self, match: Optional[str]):
+        now = time.time()
+        if match is None:
+            # No focus. If we were tracking, check lookaway reset.
+            if self.current_target is not None and self.last_seen_time is not None:
+                if now - self.last_seen_time >= LOOKAWAY_RESET_SECONDS:
+                    self._reset_dwell()
+            return
+
+        if self.current_target is None:
+            # Start tracking a new target
+            self.current_target = match
+            self.dwell_start_time = now
+            self.last_tick_second = 0
+            self.last_seen_time = now
+            return
+
+        if match == self.current_target:
+            # Continue tracking
+            self.last_seen_time = now
+            elapsed = now - (self.dwell_start_time or now)
+            whole = int(elapsed)
+            if whole > (self.last_tick_second or 0) and whole < int(DWELL_SECONDS):
+                self.play_wav(TICK_SOUND)
+                self.last_tick_second = whole
+            if elapsed >= DWELL_SECONDS:
+                # Trigger final
+                final_path = FINAL_SOUNDS.get(self.current_target)
+                if final_path:
+                    self.play_wav(final_path)
+                self.trigger_bg_flash()
+                self._reset_dwell(reset_all=True)
+        else:
+            # Different target than current. Treat as look away from current.
+            if self.last_seen_time is not None and (now - self.last_seen_time) >= LOOKAWAY_RESET_SECONDS:
+                # Switch to new target
+                self.current_target = match
+                self.dwell_start_time = now
+                self.last_tick_second = 0
+                self.last_seen_time = now
+            else:
+                # brief flicker, do not reset yet
+                pass
+
+    def _reset_dwell(self, reset_all: bool = False):
+        self.current_target = None
+        self.dwell_start_time = None
+        self.last_tick_second = None
+        self.last_seen_time = None
+        if reset_all:
+            # ensure boxes can start fresh fades
+            pass
+
+    # ---------- Visuals ----------
     def update_boxes(self, active: Optional[str]):
-        # Active box gets immediate active color. Others fade to default.
         for direction, box in self.boxes.items():
             if active is not None and direction == active:
                 job = self.fade_jobs.pop(direction, None)
                 if job:
                     self.root.after_cancel(job)
-                self.canvas.itemconfig(box, fill=MATERIAL_COLORS["box_active"]) 
+                self.canvas.itemconfig(box, fill=MATERIAL_COLORS["box_active"])
             else:
                 current = self.canvas.itemcget(box, "fill")
                 if not current or current[0] != '#':
@@ -268,15 +319,15 @@ class EyeTrackerApp:
         step()
 
     def trigger_bg_flash(self):
-        base = MATERIAL_COLORS["background"]
         active = MATERIAL_COLORS["box_active"]
-        flash = _blend_hex(base, active, BG_FLASH_FACTOR)
-        self.canvas.configure(bg=flash)
-        self.root.configure(bg=flash)
-        self._start_bg_fade(flash, base)
+        base = MATERIAL_COLORS["background"]
+        self.canvas.configure(bg=active)
+        self.root.configure(bg=active)
+        self._start_bg_fade(active, base)
 
-    def match_direction(self, vec: Vector) -> Optional[str]:
-        if not self.calibration_data:
+    # ---------- Direction match ----------
+    def match_direction(self, vec: Optional[Vector]) -> Optional[str]:
+        if not vec or not self.calibration_data:
             return None
 
         def distance(v1: Vector, v2: Vector) -> float:
@@ -290,62 +341,47 @@ class EyeTrackerApp:
                 min_dist = dist
                 min_dir = direction
 
+        print("match", min_dist)
         return min_dir if min_dist <= THRESHOLD else None
+
+    # ---------- Audio ----------
+    def play_wav(self, path: str):
+        self.sound_queue.put(("wav", path))
 
     def play_note(self, freq, duration):
         self.sound_queue.put(("note", freq, duration))
-
-    def play_success_sequence(self):
-        self.sound_queue.put(("success",))
 
     def sound_loop(self):
         sample_rate = 44100
         while True:
             task = self.sound_queue.get()
-            if task[0] == "note":
+            kind = task[0]
+            if kind == "note":
                 _, freq, duration = task
                 t = np.linspace(0, duration, int(sample_rate * duration), False)
                 wave = 0.5 * np.sin(2 * np.pi * freq * t)
                 sd.play(wave, samplerate=sample_rate, blocking=True)
-            elif task[0] == "success":
-                time.sleep(SUCCESS_WAIT)
-                data, fs = sf.read(TRIGGER_SOUND, dtype="float32")
-                sd.play(data, samplerate=fs, blocking=True)
+            elif kind == "wav":
+                _, path = task
+                data, fs = self._get_audio(path)
+                if data is not None:
+                    sd.play(data, samplerate=fs, blocking=True)
 
-    def handle_choreography(self, match):
-        if match is None:
-            self.update_boxes(None)
-            return
-
-        current_time = time.time()
-
-        if self.choreography_index == 0:
-            if match == self.choreography_steps[0]:
-                self.choreography_index = 1
-                self.last_step_time = current_time
-                self.play_note(CHOREO_NOTES[0], NOTE_DURATION)
-        else:
-            if match == self.choreography_steps[self.choreography_index]:
-                self.play_note(CHOREO_NOTES[self.choreography_index], NOTE_DURATION)
-                self.choreography_index += 1
-                self.last_step_time = current_time
-
-                if self.choreography_index == len(self.choreography_steps):
-                    self.play_success_sequence()
-                    self.choreography_index = 0
-                    self.last_step_time = None
-                    self.trigger_bg_flash()
-            elif current_time - self.last_step_time > STEP_TIMEOUT:
-                self.choreography_index = 0
-                self.last_step_time = None
-
-        self.update_boxes(match)
+    def _get_audio(self, path: str):
+        if path in self.audio_cache:
+            return self.audio_cache[path]
+        try:
+            data, fs = sf.read(path, dtype="float32")
+            self.audio_cache[path] = (data, fs)
+            return data, fs
+        except Exception:
+            return None, None
 
 
 if __name__ == '__main__':
     root = tk.Tk()
-    datasource = MouseDataSource()
     datasource.start()
     app = EyeTrackerApp(root, datasource)
     root.mainloop()
     datasource.stop()
+

@@ -27,4 +27,6 @@ class OrloskyDataSource(DataSource):
         if z == 0:
             return None  # Avoid division by zero
 
-        return (x / z, y / z)
+        lol = (x / z, y / z)
+        print(lol)
+        return lol
