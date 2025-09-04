@@ -120,6 +120,9 @@ class EyeTrackerApp:
         self.last_tick_second: Optional[int] = None
         self.last_seen_time: Optional[float] = None
 
+        # Pause tracking while final sound plays
+        self.playing_final = False
+
     def create_ui(self):
         w, h = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
         margin = 16
@@ -130,14 +133,6 @@ class EyeTrackerApp:
 
         right_x1, right_y1 = w * 0.58, margin
         right_x2, right_y2 = w - margin, h - bottom_reserve - margin
-
-        center_x1 = left_x2 + margin
-        center_x2 = right_x1 - margin
-
-        center_top_y1 = margin
-        center_top_y2 = (h - bottom_reserve - 2 * margin) / 2
-        center_bottom_y1 = center_top_y2 + margin
-        center_bottom_y2 = h - bottom_reserve - margin
 
         layout = {
             "left": (left_x1, left_y1, left_x2, left_y2),
@@ -200,7 +195,7 @@ class EyeTrackerApp:
 
     def poll_data(self):
         while True:
-            if not self.running.is_set():
+            if not self.running.is_set() or self.playing_final:
                 time.sleep(0.1)
                 continue
 
@@ -214,14 +209,12 @@ class EyeTrackerApp:
     def update_dwell(self, match: Optional[str]):
         now = time.time()
         if match is None:
-            # No focus. If we were tracking, check lookaway reset.
             if self.current_target is not None and self.last_seen_time is not None:
                 if now - self.last_seen_time >= LOOKAWAY_RESET_SECONDS:
                     self._reset_dwell()
             return
 
         if self.current_target is None:
-            # Start tracking a new target
             self.current_target = match
             self.dwell_start_time = now
             self.last_tick_second = 0
@@ -229,7 +222,6 @@ class EyeTrackerApp:
             return
 
         if match == self.current_target:
-            # Continue tracking
             self.last_seen_time = now
             elapsed = now - (self.dwell_start_time or now)
             whole = int(elapsed)
@@ -237,22 +229,18 @@ class EyeTrackerApp:
                 self.play_wav(TICK_SOUND)
                 self.last_tick_second = whole
             if elapsed >= DWELL_SECONDS:
-                # Trigger final
                 final_path = FINAL_SOUNDS.get(self.current_target)
                 if final_path:
-                    self.play_wav(final_path)
+                    self.play_wav(final_path, is_final=True)
                 self.trigger_bg_flash()
                 self._reset_dwell(reset_all=True)
         else:
-            # Different target than current. Treat as look away from current.
             if self.last_seen_time is not None and (now - self.last_seen_time) >= LOOKAWAY_RESET_SECONDS:
-                # Switch to new target
                 self.current_target = match
                 self.dwell_start_time = now
                 self.last_tick_second = 0
                 self.last_seen_time = now
             else:
-                # brief flicker, do not reset yet
                 pass
 
     def _reset_dwell(self, reset_all: bool = False):
@@ -261,7 +249,6 @@ class EyeTrackerApp:
         self.last_tick_second = None
         self.last_seen_time = None
         if reset_all:
-            # ensure boxes can start fresh fades
             pass
 
     # ---------- Visuals ----------
@@ -370,8 +357,8 @@ class EyeTrackerApp:
             pass
 
     # ---------- Audio ----------
-    def play_wav(self, path: str):
-        self.sound_queue.put(("wav", path))
+    def play_wav(self, path: str, is_final: bool = False):
+        self.sound_queue.put(("wav", path, is_final))
 
     def play_note(self, freq, duration):
         self.sound_queue.put(("note", freq, duration))
@@ -387,12 +374,16 @@ class EyeTrackerApp:
                 wave = 0.5 * np.sin(2 * np.pi * freq * t)
                 sd.play(wave, samplerate=sample_rate, blocking=True)
             elif kind == "wav":
-                _, path = task
+                _, path, is_final = task
                 data, fs = self._get_audio(path)
                 if data is not None:
+                    if is_final:
+                        self.playing_final = True
                     sd.play(data, samplerate=fs, blocking=True)
                     if path == "assets/sounds/trigger_sound_2.wav":
                         self.ingegret()
+                    if is_final:
+                        self.playing_final = False
 
     def _get_audio(self, path: str):
         if path in self.audio_cache:
