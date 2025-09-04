@@ -15,7 +15,7 @@ from data_sources.orlosky_data_source import OrloskyDataSource
 
 # datasource = MouseDataSource()
 # THRESHOLD = 250                     # distance threshold for direction match
-datasource = OrloskyDataSource()
+datasource = MouseDataSource()
 THRESHOLD = .2                     # distance threshold for direction match
 
 # --- Tuning ---
@@ -29,7 +29,7 @@ DIRECTIONS = ["left", "right"]
 TICK_SOUND = "assets/sounds/tick.wav"
 FINAL_SOUNDS = {
     "right": "assets/sounds/trigger_sound_2.wav",
-    "left": "assets/sounds/joke_001.wav",
+    "left": "assets/sounds/hunger.wav",
 }
 
 # --- Animation controls ---
@@ -117,9 +117,9 @@ class EyeTrackerApp:
         bottom_reserve = 140  # leave room for calibrate button
 
         left_x1, left_y1 = margin, margin
-        left_x2, left_y2 = w * 0.22, h - bottom_reserve - margin
+        left_x2, left_y2 = w * 0.42, h - bottom_reserve - margin
 
-        right_x1, right_y1 = w * 0.78, margin
+        right_x1, right_y1 = w * 0.58, margin
         right_x2, right_y2 = w - margin, h - bottom_reserve - margin
 
         center_x1 = left_x2 + margin
@@ -135,7 +135,7 @@ class EyeTrackerApp:
             "right": (right_x1, right_y1, right_x2, right_y2),
         }
 
-        labels = {"right": "Pers", "left": "Joke"}
+        labels = {"right": "Personalruf", "left": "Hunger"}
 
         for direction, (x1, y1, x2, y2) in layout.items():
             box = self.canvas.create_rectangle(
