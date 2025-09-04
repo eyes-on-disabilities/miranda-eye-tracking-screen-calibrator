@@ -12,11 +12,20 @@ import soundfile as sf
 from misc import Vector
 from data_sources.mouse_data_source import MouseDataSource
 from data_sources.orlosky_data_source import OrloskyDataSource
+from data_sources.pupil_data_source import PupilDataSource
+import sys
 
-# datasource = MouseDataSource()
-# THRESHOLD = 250                     # distance threshold for direction match
-datasource = MouseDataSource()
-THRESHOLD = .2                     # distance threshold for direction match
+if len(sys.argv) < 2:
+    datasource = OrloskyDataSource()
+else:
+    arg = sys.argv[1].lower()
+    if arg == "mouse":
+        datasource = MouseDataSource()
+    elif arg == "pupil":
+        datasource = PupilDataSource()
+    else:
+        datasource = OrloskyDataSource()
+print("picking data source:", type(datasource).__name__)
 
 # --- Tuning ---
 DWELL_SECONDS = 3.0                 # gaze time needed to trigger final sound
@@ -66,7 +75,7 @@ class EyeTrackerApp:
 
         self.root.title("Eye Tracker")
         self.root.configure(bg=MATERIAL_COLORS["background"])
-        self.root.attributes('-fullscreen', True)
+        # self.root.attributes('-fullscreen', True)
 
         self.canvas = tk.Canvas(
             root,
@@ -180,7 +189,7 @@ class EyeTrackerApp:
         def on_enter(_event):
             vec = self.datasource.get_next_vector()
             if vec:
-                self.calibration_x[direction] = vec[0]
+                self.calibration_x[direction] = vec[1] if type(datasource).__name__ == "PupilDataSource" else vec[0]
                 win.destroy()
             else:
                 messagebox.showerror("Error", "No vector received. Try again.")
@@ -329,7 +338,7 @@ class EyeTrackerApp:
         if not ("left" in self.calibration_x and "right" in self.calibration_x):
             return None
         try:
-            x = vec[0]
+            x = vec[1] if type(datasource).__name__ == "PupilDataSource" else vec[0]
         except Exception:
             x = float(vec.x) if hasattr(vec, 'x') else None
         if x is None:
@@ -353,9 +362,12 @@ class EyeTrackerApp:
         ser.write(b"a")
 
     def ingegret(self):
-        self.toggle()
-        time.sleep(3.0)
-        self.toggle()
+        try:
+            self.toggle()
+            time.sleep(1.5)
+            self.toggle()
+        except Exception as _:
+            pass
 
     # ---------- Audio ----------
     def play_wav(self, path: str):
